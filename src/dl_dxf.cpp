@@ -112,7 +112,7 @@ DL_Dxf::~DL_Dxf() {
  * @retval false If \p file could not be opened.
  */
 bool DL_Dxf::in(const std::string& file, DL_CreationInterface* creationInterface) {
-    FILE *fp;
+    FILE* fp;
     firstCall = true;
     currentObjectType = DL_UNKNOWN;
 
@@ -176,22 +176,47 @@ bool DL_Dxf::in(std::istream& stream,
  * @retval true If EOF not reached.
  * @retval false If EOF reached.
  */
-bool DL_Dxf::readDxfGroups(FILE *fp, DL_CreationInterface* creationInterface) {
-
-    static int line = 1;
-
-    // Read one group of the DXF file and strip the lines:
-    if (DL_Dxf::getStrippedLine(groupCodeTmp, DL_DXF_MAXLINE, fp) &&
-            DL_Dxf::getStrippedLine(groupValue, DL_DXF_MAXLINE, fp, false) ) {
-
-        groupCode = (unsigned int)toInt(groupCodeTmp);
-
-        creationInterface->processCodeValuePair(groupCode, groupValue);
-        line+=2;
-        processDXFGroup(creationInterface, groupCode, groupValue);
+//bool DL_Dxf::readDxfGroups(FILE *fp, DL_CreationInterface* creationInterface) {
+//
+//    static int line = 1;
+//
+//    // Read one group of the DXF file and strip the lines:
+//    if (DL_Dxf::getStrippedLine(groupCodeTmp, DL_DXF_MAXLINE, fp) &&//组码
+//            DL_Dxf::getStrippedLine(groupValue, DL_DXF_MAXLINE, fp, false) ) {//组值
+//
+//        groupCode = (unsigned int)toInt(groupCodeTmp);
+//
+//        creationInterface->processCodeValuePair(groupCode, groupValue);//原始数据广播
+//        line+=2;
+//        processDXFGroup(creationInterface, groupCode, groupValue);//关键
+//    }
+//
+//    return !feof(fp);
+//}
+bool DL_Dxf::readDxfGroups(FILE* fp, DL_CreationInterface* creationInterface) {
+    // 1. 直接尝试读取组码
+    if (!DL_Dxf::getStrippedLine(groupCodeTmp, DL_DXF_MAXLINE, fp)) {
+        return false; // 如果读不到组码（文件结束或出错），直接返回 false
     }
 
-    return !feof(fp);
+    // 2. 尝试读取组值
+    if (!DL_Dxf::getStrippedLine(groupValue, DL_DXF_MAXLINE, fp, false)) {
+        // 如果有组码但没读到组值，说明文件损坏或格式错误
+        // 但为了容错，我们可以打印警告并尝试继续，或者直接返回 false
+        std::cerr << "Warning: Unexpected end of file or missing group value." << std::endl;
+        return false;
+    }
+
+    // 3. 解析和处理
+    groupCode = (unsigned int)toInt(groupCodeTmp);
+
+    // 广播数据（这一步通常不会导致读取中断，除非回调函数里有异常）
+    creationInterface->processCodeValuePair(groupCode, groupValue);
+
+    // 处理具体逻辑
+    processDXFGroup(creationInterface, groupCode, groupValue);
+
+    return true; // 只要成功读取并处理了一组，就返回 true
 }
 
 
@@ -243,6 +268,12 @@ bool DL_Dxf::getStrippedLine(std::string& s, unsigned int size, FILE *fp, bool s
         char* line;
 
         line = fgets(wholeLine, size, fp);
+
+
+        FILE* file = fopen("logPath.log", "a");
+        fprintf(file, "Content :%s\n", line);
+        fclose(file);
+
 
         if (line!=NULL && line[0] != '\0') { // Evaluates to fgets() retval
             // line == wholeLine at this point.
@@ -360,7 +391,7 @@ bool DL_Dxf::processDXFGroup(DL_CreationInterface* creationInterface,
     }
 
     // Indicates start of new entity or variable:
-    else if (groupCode==0 || groupCode==9) {
+    else if (groupCode==0 || groupCode==9) {//新实体，旧的给默认参数
         // If new entity is encountered, the last one is complete.
         // Prepare default attributes for next entity:
         std::string layer = getStringValue(8, "0");
@@ -695,7 +726,7 @@ bool DL_Dxf::processDXFGroup(DL_CreationInterface* creationInterface,
 
         return true;
 
-    } else {
+    } else {//非999、0、9的其他组码
         // Group code does not indicate start of new entity or setting,
         // so this group must be continuation of data for the current
         // one.

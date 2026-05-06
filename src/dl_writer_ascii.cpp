@@ -153,4 +153,13 @@ void DL_WriterA::strReplace(char* str, char src, char dest) {
         }
     }
 }
-
+/**
+ * model "w" not "wb"
+ */
+DL_WriterA::DL_WriterA(const char* fname, DL_Codes::version version)
+    : DL_Writer(version),
+    m_ofile(fname, std::ios::out | std::ios::trunc) // 在这里直接打开
+{
+    // 构造函数体可以为空，或者用于检查是否打开成功
+    // if (!m_ofile.is_open()) { ... }
+}

@@ -8,15 +8,21 @@
 #define PCH_H
 
 // 添加要在此处预编译的标头
+
+#define NOGDI         // 防止 windows.h 定义 Arc, Circle, Polygon 等宏
+
 #include "framework.h"
 
 #include "dl_dxf.h"//包含路径在项目属性->C/C++->常规中配置
-#include "dl_creationinterface.h"
+//#include "dl_creationinterface.h"
 #include "dl_creationadapter.h"
 
 #include <string>
 #include <memory>//智能指针
 #include <iostream>
 #include <stdio.h>
+#include <stack>//栈
+
+#include <boost/variant.hpp>
 
 #endif //PCH_H

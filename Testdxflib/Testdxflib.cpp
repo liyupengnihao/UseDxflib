@@ -185,12 +185,26 @@ void testWriting() {
 #pragma region 初始化与创建文件
     DL_Dxf* dxf = new DL_Dxf();
     DL_Codes::version exportVersion = DL_Codes::AC1015;
-    DL_WriterA* dw = dxf->out("newfile.dxf", exportVersion);//清空文本内容
+    //DL_WriterA* dw = dxf->out("newfileTwo.dxf", exportVersion);//清空文本内容//内部二进制写入，读取都是按文本的
+    DL_WriterA* dw = dxf->out("newfileFour.dxf", exportVersion);//清空文本内容//内部二进制写入，读取都是按文本的
     if (dw == NULL) {
         printf("Cannot open file 'newfile.dxf' \
                for writing.");
         // abort function e.g. with return
     }
+#pragma endregion
+
+#pragma region 文本写入
+ //   DL_Dxf* dxf = new DL_Dxf();
+	//DL_Codes::version exportVersion = DL_Codes::AC1015;
+
+	//FILE* fp = fopen("newfile.dxf", "w");
+ //   if (fp == NULL)
+ //   {
+ //       std::cout << "无法创建文件！" << std::endl;
+ //       return;
+ //   }
+ //   DL_WriterA* dw = new DL_WriterA(fp, exportVersion);
 #pragma endregion
 
 
@@ -301,6 +315,14 @@ void testWriting() {
     dw->sectionEntities();
 
     // write all entities in model space:
+
+    //dxf->writePoint(//写入点实体
+    //    *dw,
+    //    DL_PointData(0.0,
+    //        0.0,
+    //        0.0),
+    //    DL_Attributes("mainlayer", 256, -1, "BYLAYER", 1.0));
+
     dxf->writePoint(//写入点实体
         *dw,
         DL_PointData(10.0,
@@ -310,8 +332,8 @@ void testWriting() {
 
     dxf->writeLine(//写入线
         *dw,
-        DL_LineData(25.0,   // start point
-            30.0,
+        DL_LineData(0.0,   // start point
+            0.0,
             0.0,
             100.0,   // end point
             120.0,
@@ -360,7 +382,8 @@ int main()
     std::cout << "Hello World!\n";
 
     usage();
-    char FilePath[1024] = "E:/VSCODE/CADAnalysisDLL/DxfFile/examples/readwrite/demo.dxf";
+    //char FilePath[1024] = "E:/VSCODE/CADAnalysisDLL/DxfFile/examples/readwrite/demo.dxf";
+    char FilePath[1024] = "E:/VSCODE/CADAnalysisDLL/DxfFile/examples/readwrite/newfile.dxf";
     testReading(FilePath);
     testWriting();
 }

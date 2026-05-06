@@ -48,8 +48,10 @@
  */
 class DXFLIB_EXPORT DL_WriterA : public DL_Writer {
 public:
-    DL_WriterA(const char* fname, DL_Codes::version version=DL_VERSION_2000)
-            : DL_Writer(version), m_ofile(fname) {}
+    /*DL_WriterA(const char* fname, DL_Codes::version version=DL_VERSION_2000)
+            : DL_Writer(version), m_ofile(fname) {}*/
+    DL_WriterA(const char* fname, DL_Codes::version version = DL_VERSION_2000);
+
     virtual ~DL_WriterA() {}
 
     bool openFailed() const;
