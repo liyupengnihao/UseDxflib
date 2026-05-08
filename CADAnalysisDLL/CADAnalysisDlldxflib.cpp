@@ -11,19 +11,36 @@ dxflibCreationClass::~dxflibCreationClass()
 /// </summary>
 /// <param name="colorIndex">颜色索引</param>
 /// <returns>颜色类型结构体</returns>
-Color dxflibCreationClass::ConvertColor(int colorIndex)
+//Color dxflibCreationClass::ConvertColor(int colorIndex)
+//{
+//    Color c;
+//    if (colorIndex == -1) {
+//        c.type = ColorType::ByBlock;
+//        c.index = 0;
+//    }
+//    else if (colorIndex == -2) {
+//        c.type = ColorType::ByLayer;
+//        c.index = 0;
+//    }
+//    else {
+//        c.type = ColorType::Custom;
+//        c.index = colorIndex;
+//    }
+//    return c;
+//}
+DxfColor dxflibCreationClass::ConvertColor(int colorIndex)
 {
-    Color c;
+    DxfColor c;
     if (colorIndex == -1) {
-        c.type = ColorType::ByBlock;
+        c.type = DxfColorType::DXFC_BYBLOCK;
         c.index = 0;
     }
     else if (colorIndex == -2) {
-        c.type = ColorType::ByLayer;
+        c.type = DxfColorType::DXFC_BYLAYER;
         c.index = 0;
     }
     else {
-        c.type = ColorType::Custom;
+        c.type = DxfColorType::DXFC_CUSTOM;
         c.index = colorIndex;
     }
     return c;
@@ -46,25 +63,36 @@ void dxflibCreationClass::addPoint(const DL_PointData& data) {
     printf("POINT    (%6.3f, %6.3f, %6.3f)\n",
         data.x, data.y, data.z);
 
-    DxfEntity entity;
+    //DxfEntity entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::POINTDXF;
+    ////设置类型
+    //entity.entityType = DxfEntity::Type::POINTDXF;
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
-    //entity.attributes.thickness = getAttributes().get
-    //entity.attributes.invisible = getAttributes()
+    ////公共属性
+    //entity.attributes.layer = getAttributes().getLayer();
+    //entity.attributes.handle = getAttributes().getHandle();
+    //entity.attributes.color = ConvertColor(getAttributes().getColor());
+    //entity.attributes.lineWeight = getAttributes().getWidth();
+    //entity.attributes.linetype = getAttributes().getLinetype();
+    ////entity.attributes.thickness = getAttributes().get
+    ////entity.attributes.invisible = getAttributes()
 
-    PointDxf pointDxfData;
+    DxfEntityWrapper entity;
+
+    entity.type = DxfEntityType::DXF_ENTITY_POINT;
+    AddPublicAttributes(entity.attr);
+
+
+    //PointDxf pointDxfData;
+    //pointDxfData.pointCoord = { data.x,data.y,data.z };
+
+    //entity.entityData = pointDxfData;
+    //g_entityList.push_back(entity);//动态数组推送
+
+    DxfPointEntity pointDxfData;
     pointDxfData.pointCoord = { data.x,data.y,data.z };
-
-    entity.entityData = pointDxfData;
-    g_entityList.push_back(entity);//动态数组推送
+    entity.data.point = pointDxfData;
+    g_entityList.push_back(entity);
 
     printAttributes();
 }
@@ -77,27 +105,40 @@ void dxflibCreationClass::addLine(const DL_LineData& data) {
     printf("LINE     (%6.3f, %6.3f, %6.3f) (%6.3f, %6.3f, %6.3f)\n",
         data.x1, data.y1, data.z1, data.x2, data.y2, data.z2);
 
-    DxfEntity entity;
+    //DxfEntity entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::LINE;
+    ////设置类型
+    //entity.entityType = DxfEntity::Type::LINE;
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
-    //entity.attributes.thickness = getAttributes().get
-    //entity.attributes.invisible = getAttributes()
+    ////公共属性
+    //entity.attributes.layer = getAttributes().getLayer();
+    //entity.attributes.handle = getAttributes().getHandle();
+    //entity.attributes.color = ConvertColor(getAttributes().getColor());
+    //entity.attributes.lineWeight = getAttributes().getWidth();
+    //entity.attributes.linetype = getAttributes().getLinetype();
+    ////entity.attributes.thickness = getAttributes().get
+    ////entity.attributes.invisible = getAttributes()
 
-    //几何信息
-    Line lineData;
+
+    DxfEntityWrapper entity;
+
+    entity.type = DxfEntityType::DXF_ENTITY_LINE;
+    AddPublicAttributes(entity.attr);
+
+
+    ////几何信息
+    //Line lineData;
+    //lineData.start = { data.x1,data.y1,data.z1 };
+    //lineData.end = { data.x2,data.y2,data.z2 };
+
+    //entity.entityData = lineData;
+    //g_entityList.push_back(entity);//动态数组推送
+
+    DxfLineEntity lineData;
     lineData.start = { data.x1,data.y1,data.z1 };
     lineData.end = { data.x2,data.y2,data.z2 };
-
-    entity.entityData = lineData;
-    g_entityList.push_back(entity);//动态数组推送
+    entity.data.line = lineData;
+    g_entityList.push_back(entity);
 
     printAttributes();
 }
@@ -107,25 +148,44 @@ void dxflibCreationClass::addText(const DL_TextData& data)
         data.ipx, data.ipy, data.ipz,
 		data.height, data.angle, data.text.c_str());
 
-    DxfEntity entity;
+    //DxfEntity entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::TEXT;
+    ////设置类型
+    //entity.entityType = DxfEntity::Type::TEXT;
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
-    //entity.attributes.thickness = getAttributes().get
-    //entity.attributes.invisible = getAttributes()
-    Text textData;
-    textData.inserPoint = { data.ipx,data.ipy, data.ipz };
-    textData.content = data.text;
+    ////公共属性
+    //entity.attributes.layer = getAttributes().getLayer();
+    //entity.attributes.handle = getAttributes().getHandle();
+    //entity.attributes.color = ConvertColor(getAttributes().getColor());
+    //entity.attributes.lineWeight = getAttributes().getWidth();
+    //entity.attributes.linetype = getAttributes().getLinetype();
+    ////entity.attributes.thickness = getAttributes().get
+    ////entity.attributes.invisible = getAttributes()
+
+    DxfEntityWrapper entity;
+
+    entity.type = DxfEntityType::DXF_ENTITY_TEXT;
+    AddPublicAttributes(entity.attr);
+
+    //Text textData;
+    //textData.inserPoint = { data.ipx,data.ipy, data.ipz };
+    //textData.content = data.text;
+    //textData.height = data.height;
+    //textData.rotation = data.angle;
+    //entity.entityData = textData;
+    //g_entityList.push_back(entity);
+    
+    DxfTextEntity textData;
+    textData.insertPoint = { data.ipx,data.ipy, data.ipz };
+    strncpy_s(
+        textData.content,
+        sizeof(textData.content),
+        data.text.c_str(),
+        _TRUNCATE
+    );
     textData.height = data.height;
     textData.rotation = data.angle;
-    entity.entityData = textData;
+    entity.data.text = textData;
     g_entityList.push_back(entity);
 
     printAttributes();
@@ -137,24 +197,42 @@ void dxflibCreationClass::addMText(const DL_MTextData& data)
         data.ipx, data.ipy, data.ipz,
         data.height, data.angle, data.text.c_str());
 
-    DxfEntity entity;
+    //DxfEntity entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::TEXT;
+    ////设置类型
+    //entity.entityType = DxfEntity::Type::TEXT;
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
+    ////公共属性
+    //entity.attributes.layer = getAttributes().getLayer();
+    //entity.attributes.handle = getAttributes().getHandle();
+    //entity.attributes.color = ConvertColor(getAttributes().getColor());
+    //entity.attributes.lineWeight = getAttributes().getWidth();
+    //entity.attributes.linetype = getAttributes().getLinetype();
 
-    Text textMData;
-    textMData.inserPoint = { data.ipx,data.ipy,data.ipz };
-    textMData.content = data.text;
+    DxfEntityWrapper entity;
+
+    entity.type = DxfEntityType::DXF_ENTITY_TEXT;
+    AddPublicAttributes(entity.attr);
+
+    //Text textMData;
+    //textMData.inserPoint = { data.ipx,data.ipy,data.ipz };
+    //textMData.content = data.text;
+    //textMData.height = data.height;
+    //textMData.rotation = data.angle;
+    //entity.entityData = textMData;
+    //g_entityList.push_back(entity);
+
+    DxfTextEntity textMData;
+    textMData.insertPoint = { data.ipx,data.ipy,data.ipz };
+    strncpy_s(
+        textMData.content,
+        sizeof(textMData.content),
+        data.text.c_str(),
+        _TRUNCATE
+    );
     textMData.height = data.height;
     textMData.rotation = data.angle;
-    entity.entityData = textMData;
+    entity.data.text = textMData;
     g_entityList.push_back(entity);
 
     printAttributes();
@@ -168,26 +246,39 @@ void dxflibCreationClass::addArc(const DL_ArcData& data) {
         data.cx, data.cy, data.cz,
         data.radius, data.angle1, data.angle2);
 
-    DxfEntity entity;
+    //DxfEntity entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::ARC;
+    ////设置类型
+    //entity.entityType = DxfEntity::Type::ARC;
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
-    //entity.attributes.thickness = getAttributes().get
-    //entity.attributes.invisible = getAttributes()
+    ////公共属性
+    //entity.attributes.layer = getAttributes().getLayer();
+    //entity.attributes.handle = getAttributes().getHandle();
+    //entity.attributes.color = ConvertColor(getAttributes().getColor());
+    //entity.attributes.lineWeight = getAttributes().getWidth();
+    //entity.attributes.linetype = getAttributes().getLinetype();
+    ////entity.attributes.thickness = getAttributes().get
+    ////entity.attributes.invisible = getAttributes()
 
-    Arc arcData;
+    DxfEntityWrapper entity;
+
+    entity.type = DxfEntityType::DXF_ENTITY_ARC;
+    AddPublicAttributes(entity.attr);
+
+    /*Arc arcData;
     arcData.center = { data.cx, data.cy, data.cz };
     arcData.radius = data.radius;
     arcData.startAngle = data.angle1;
     arcData.endAngle = data.angle2;
     entity.entityData = arcData;
+    g_entityList.push_back(entity);*/
+
+    DxfArcEntity arcData;
+    arcData.center = { data.cx, data.cy, data.cz };
+    arcData.radius = data.radius;
+    arcData.startAngle = data.angle1;
+    arcData.endAngle = data.angle2;
+    entity.data.arc = arcData;
     g_entityList.push_back(entity);
 
     printAttributes();
@@ -202,26 +293,38 @@ void dxflibCreationClass::addCircle(const DL_CircleData& data) {
         data.cx, data.cy, data.cz,
         data.radius);
 
-    DxfEntity entity;
+    //DxfEntity entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::CIRCLE;
+    ////设置类型
+    //entity.entityType = DxfEntity::Type::CIRCLE;
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
-    //entity.attributes.thickness = getAttributes().get
-    //entity.attributes.invisible = getAttributes()
+    ////公共属性
+    //entity.attributes.layer = getAttributes().getLayer();
+    //entity.attributes.handle = getAttributes().getHandle();
+    //entity.attributes.color = ConvertColor(getAttributes().getColor());
+    //entity.attributes.lineWeight = getAttributes().getWidth();
+    //entity.attributes.linetype = getAttributes().getLinetype();
+    ////entity.attributes.thickness = getAttributes().get
+    ////entity.attributes.invisible = getAttributes()
 
-    Circle circleData;
+    DxfEntityWrapper entity;
+
+    entity.type = DxfEntityType::DXF_ENTITY_CIRCLE;
+    AddPublicAttributes(entity.attr);
+
+    //Circle circleData;
+    //circleData.center = { data.cx,data.cy,data.cz };
+    //circleData.radius = data.radius;
+
+    //entity.entityData = circleData;
+    //g_entityList.push_back(entity);
+
+    DxfCircleEntity circleData;
     circleData.center = { data.cx,data.cy,data.cz };
     circleData.radius = data.radius;
-
-    entity.entityData = circleData;
+    entity.data.circle = circleData;
     g_entityList.push_back(entity);
+
     printAttributes();
 }
 
@@ -230,58 +333,82 @@ void dxflibCreationClass::addCircle(const DL_CircleData& data) {
  * Sample implementation of the method which handles polyline entities.
  * 多线段实体
  */
-void dxflibCreationClass::addPolyline(const DL_PolylineData& data) {
+void dxflibCreationClass::addPolyline(const DL_PolylineData& data) {//注意后续内存管理
     printf("POLYLINE \n");
     printf("flags: %d\n", (int)data.flags);
 
-    DxfEntity entity;
+    DxfEntityWrapper entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::POLYLINE;
+    entity.type = DxfEntityType::DXF_ENTITY_POLYLINE;
+    AddPublicAttributes(entity.attr);
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
+ //   Polyline* pPoly = new Polyline();
+ //   pPoly->isClosed = (data.flags & 1) == 1;
+	//pPoly->vertices.reserve(data.number);//多段线顶点数量
+ //   // 将临时指针存入一个栈中，等待后续的 addVertex 回调填充
+ //   m_polylineStack.push(pPoly);//暂存正在创建但还没完成的多段线对象
 
-    Polyline* pPoly = new Polyline();
-    pPoly->isClosed = (data.flags & 1) == 1;
-	pPoly->vertices.reserve(data.number);//多段线顶点数量
+
+    DxfPolylineEntity* pPoly = new DxfPolylineEntity();//后续添加此多段线顶点还要使用
+    //pPoly->isClosed = (data.flags & 1) == 1;
+    pPoly->pFlags = data.flags;
+    //pPoly->vertexCount = data.number;
     // 将临时指针存入一个栈中，等待后续的 addVertex 回调填充
-    m_polylineStack.push(pPoly);//暂存正在创建但还没完成的多段线对象
+    //_vertexHandle此句柄还未使用
+    PointList* pPoints = new PointList();
+    //pPoints->reserve(data.number);//预分配容器内存空间
+
+    // 将 vector 的地址强转为句柄
+    // _vertexHandle 就“拥有”了这个 vector
+    pPoly->_vertexHandle = static_cast<DxfDataBuffer_Handle>(pPoints);
+
+    m_polylineStack.push(pPoly);
+
+    //g_entityList.push_back(entity);
 
     printAttributes();
+
+    m_isCurrentEntityPolyline = true;
 }
 
-void dxflibCreationClass::addVertex(const DL_VertexData& data)
+void dxflibCreationClass::addVertex(const DL_VertexData& data)//注意后续内存管理
 {
     if (!m_polylineStack.empty())
     {
-        Polyline* pPoly = m_polylineStack.top();
-        pPoly->vertices.push_back({ data.x, data.y, data.z });
+        DxfPolylineEntity* pPoly = m_polylineStack.top();//当前正在构建的多段线，top访问栈顶元素但不移除
+
+        //句柄转回std::vector指针
+        PointList* pPoints = static_cast<PointList*>(pPoly->_vertexHandle);
+
+        pPoints->push_back({ data.x,data.y,data.z });
+
+        //pPoly->vertices.push_back({ data.x, data.y, data.z });
     }
 }
 #pragma endregion
 
 void dxflibCreationClass::addInsert(const DL_InsertData& data)
 {
-    printf("POLYLINE \n");
-    
-    DxfEntity entity;
+    printf("Insert \n");
+    printf("x scale:%lf,yscale:%lf", data.sx, data.sy);
+    //std::cout << "x缩放：" << data.sx << "y缩放：" << data.sy << std::endl;
+    //DxfEntity entity;
 
-    //设置类型
-    entity.entityType = DxfEntity::Type::INSERT;
+    ////设置类型
+    //entity.entityType = DxfEntity::Type::INSERT;
 
-    //公共属性
-    entity.attributes.layer = getAttributes().getLayer();
-    entity.attributes.handle = getAttributes().getHandle();
-    entity.attributes.color = ConvertColor(getAttributes().getColor());
-    entity.attributes.lineWeight = getAttributes().getWidth();
-    entity.attributes.linetype = getAttributes().getLinetype();
+    ////公共属性
+    //entity.attributes.layer = getAttributes().getLayer();
+    //entity.attributes.handle = getAttributes().getHandle();
+    //entity.attributes.color = ConvertColor(getAttributes().getColor());
+    //entity.attributes.lineWeight = getAttributes().getWidth();
+    //entity.attributes.linetype = getAttributes().getLinetype();
+    DxfEntityWrapper entity;
 
-    Insert insertData;
+    entity.type = DxfEntityType::DXF_ENTITY_INSERT;
+    AddPublicAttributes(entity.attr);
+
+    /*Insert insertData;
     insertData.blockName = data.name;
     insertData.position = { data.ipx, data.ipy, data.ipz };
     insertData.scaleX = data.sx;
@@ -289,7 +416,22 @@ void dxflibCreationClass::addInsert(const DL_InsertData& data)
     insertData.rotation = data.angle;
 
     entity.entityData = insertData;
+    g_entityList.push_back(entity);*/
+
+    DxfInsertEntity insertData;
+    strncpy_s(
+        insertData.blockName,
+        sizeof(insertData.blockName),
+        data.name.c_str(),
+        _TRUNCATE
+    );
+    insertData.position = { data.ipx,data.ipy,data.ipz };
+    insertData.scaleX = data.sx;
+    insertData.scaleY = data.sy;
+    insertData.rotation = data.angle;
+    entity.data.insert = insertData;
     g_entityList.push_back(entity);
+
 }
 
 ///**
@@ -343,4 +485,64 @@ void dxflibCreationClass::printAttributes() {
         printf("%d", attributes.getWidth());//具体线宽值(毫米)
     }
     printf(" Type: %s\n", attributes.getLinetype().c_str());//线型名称
+}
+
+void dxflibCreationClass::AddPublicAttributes(DxfEntityAttr& publicAttr)
+{
+    //entity.attr.layer = getAttributes().getLayer();
+    strncpy_s(
+        publicAttr.layer,    // 左边：目标 char[256]
+        sizeof(publicAttr.layer), // 大小固定256
+        getAttributes().getLayer().c_str(), // 右边 string 转 const char*
+        _TRUNCATE             // 超长自动截断
+    );
+    //publicAttr.handle = getAttributes().getHandle();
+    publicAttr.color = ConvertColor(getAttributes().getColor());
+    publicAttr.lineWeight = getAttributes().getWidth();
+    strncpy_s(
+        publicAttr.linetype,
+        sizeof(publicAttr.linetype),
+        getAttributes().getLinetype().c_str(),
+        _TRUNCATE
+    );
+    publicAttr.lineTypeScale = getAttributes().getLinetypeScale();
+}
+
+void dxflibCreationClass::endEntity()
+{
+    if (m_isCurrentEntityPolyline)
+    {//多段线在此推送到g_entityList
+        
+        // 取出完成的多段线
+        DxfPolylineEntity* pPoly = m_polylineStack.top();
+        m_polylineStack.pop();
+
+        PointList* pPoints = static_cast<PointList*>(pPoly->_vertexHandle);
+        pPoly->vertexCount = pPoints->size();
+
+        // 包装并加入列表
+        DxfEntityWrapper entity;
+        entity.type = DXF_ENTITY_POLYLINE;
+        AddPublicAttributes(entity.attr);
+        entity.data.polyline = *pPoly;
+
+        g_entityList.push_back(entity);
+
+        // 释放内存
+        //delete pPoints;
+        //delete pPoly;//后续还需要使用
+
+        m_isCurrentEntityPolyline = false;
+    }
+}
+
+void dxflibCreationClass::RemoveAndDeletePolylineStack()
+{
+    while (!m_polylineStack.empty())
+    {
+        // 先释放真正的对象内存
+        delete m_polylineStack.top();
+        // 再把指针从栈里扔掉
+        m_polylineStack.pop();
+	}
 }
