@@ -257,26 +257,6 @@ CONTINUOUS
 390
 F
   0
-LAYER
-  5
-32
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-anotherlayer
- 70
-0
- 62
-250
-  6
-CONTINUOUS
-370
-100
-390
-F
-  0
 ENDTAB
   0
 TABLE
@@ -291,7 +271,7 @@ AcDbSymbolTable
   0
 STYLE
   5
-33
+32
 100
 AcDbSymbolTableRecord
 100
@@ -487,30 +467,6 @@ AcDbBlockTableRecord
 340
 26
   0
-BLOCK_RECORD
-  5
-34
-100
-AcDbSymbolTableRecord
-100
-AcDbBlockTableRecord
-  2
-myblock1
-340
-0
-  0
-BLOCK_RECORD
-  5
-35
-100
-AcDbSymbolTableRecord
-100
-AcDbBlockTableRecord
-  2
-myblock2
-340
-0
-  0
 ENDTAB
   0
 ENDSEC
@@ -627,7 +583,7 @@ AcDbBlockEnd
   0
 BLOCK
   5
-36
+33
 100
 AcDbEntity
   8
@@ -635,7 +591,7 @@ AcDbEntity
 100
 AcDbBlockBegin
   2
-myblock1
+TestblockOne
  70
 0
  10
@@ -645,13 +601,69 @@ myblock1
  30
 0.0
   3
-myblock1
+TestblockOne
   1
 
   0
+LINE
+  5
+34
+100
+AcDbEntity
+  8
+0
+ 62
+256
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbLine
+ 10
+0.0
+ 20
+5.0
+ 30
+0.0
+ 11
+15.0
+ 21
+5.0
+ 31
+0.0
+  0
+CIRCLE
+  5
+35
+100
+AcDbEntity
+  8
+0
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbCircle
+ 10
+5.0
+ 20
+5.0
+ 30
+0.0
+ 40
+5.0
+  0
 ENDBLK
   5
-37
+36
 100
 AcDbEntity
   8
@@ -661,7 +673,7 @@ AcDbBlockEnd
   0
 BLOCK
   5
-38
+37
 100
 AcDbEntity
   8
@@ -669,7 +681,7 @@ AcDbEntity
 100
 AcDbBlockBegin
   2
-myblock2
+TestblockTwo
  70
 0
  10
@@ -679,9 +691,43 @@ myblock2
  30
 0.0
   3
-myblock2
+TestblockTwo
   1
 
+  0
+LWPOLYLINE
+  5
+38
+100
+AcDbEntity
+  8
+0
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbPolyline
+ 90
+5
+ 70
+1
+ 10
+-2.0
+ 20
+-2.0
+ 10
+-20.0
+ 20
+-2.0
+ 10
+-20.0
+ 20
+-20.0
   0
 ENDBLK
   5
@@ -717,9 +763,9 @@ BYLAYER
 100
 AcDbPoint
  10
-10.0
+25.0
  20
-45.0
+95.0
  30
 0.0
   0
@@ -741,15 +787,15 @@ BYLAYER
 100
 AcDbLine
  10
-25.0
- 20
 30.0
+ 20
+10.0
  30
 0.0
  11
-100.0
+70.0
  21
-120.0
+10.0
  31
 0.0
   0
@@ -773,11 +819,207 @@ AcDbCircle
  10
 50.0
  20
-60.0
+50.0
  30
 0.0
  40
-10.0
+20.0
+  0
+ARC
+  5
+3D
+100
+AcDbEntity
+  8
+mainlayer
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbCircle
+ 10
+100.0
+ 20
+100.0
+ 30
+0.0
+ 40
+50.0
+100
+AcDbArc
+ 50
+0.0
+ 51
+90.0
+  0
+TEXT
+  5
+3E
+100
+AcDbEntity
+  8
+mainlayer
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbText
+ 10
+50.0
+ 20
+50.0
+ 30
+0.0
+ 40
+5.0
+  1
+TestSingleText
+ 50
+0.0
+ 41
+1.0
+  7
+Standard
+ 71
+0
+ 72
+1
+ 11
+50.0
+ 21
+50.0
+ 31
+0.0
+100
+AcDbText
+ 73
+2
+  0
+LWPOLYLINE
+  5
+3F
+100
+AcDbEntity
+  8
+mainlayer
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbPolyline
+ 90
+5
+ 70
+1
+ 10
+100.0
+ 20
+0.0
+ 10
+100.0
+ 20
+50.0
+ 10
+50.0
+ 20
+100.0
+ 10
+0.0
+ 20
+30.0
+  0
+INSERT
+  5
+40
+100
+AcDbEntity
+  8
+mainlayer
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbBlockReference
+  2
+TestblockOne
+ 10
+0.0
+ 20
+120.0
+ 30
+0.0
+  0
+INSERT
+  5
+41
+100
+AcDbEntity
+  8
+mainlayer
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbBlockReference
+  2
+TestblockOne
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+  0
+INSERT
+  5
+42
+100
+AcDbEntity
+  8
+mainlayer
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbBlockReference
+  2
+TestblockTwo
+ 10
+-20.0
+ 20
+-20.0
+ 30
+0.0
   0
 ENDSEC
   0
@@ -817,7 +1059,7 @@ E
   3
 AcDbVariableDictionary
 350
-3D
+43
   0
 DICTIONARY
   5
@@ -1281,7 +1523,7 @@ Layout2
   0
 DICTIONARY
   5
-3D
+43
 100
 AcDbDictionary
 281
@@ -1289,15 +1531,15 @@ AcDbDictionary
   3
 DIMASSOC
 350
-3F
+45
   3
 HIDETEXT
 350
-3E
+44
   0
 DICTIONARYVAR
   5
-3E
+44
 100
 DictionaryVariables
 280
@@ -1307,7 +1549,7 @@ DictionaryVariables
   0
 DICTIONARYVAR
   5
-3F
+45
 100
 DictionaryVariables
 280

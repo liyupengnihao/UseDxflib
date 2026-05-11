@@ -161,9 +161,14 @@ public:
 	virtual void addArc(const DL_ArcData& data)override;//圆弧
 	virtual void addText(const DL_TextData& data)override;//单行文本
 	virtual void addMText(const DL_MTextData& data)override;//多行文本
+
 	virtual void addPolyline(const DL_PolylineData& data)override;//多段线
 	virtual void addVertex(const DL_VertexData& data)override;//顶点
+
 	virtual void addInsert(const DL_InsertData& data)override;//块引用
+
+	virtual void addBlock(const DL_BlockData& data)override;//块头部信息
+	virtual void endBlock()override;//块内实体全部遍历后调用
 
 	virtual void endEntity()override;//实体结束函数，处理下实体结束时多段线
 
@@ -186,11 +191,24 @@ public:
 	void RemoveAndDeletePolylineStack();
 
 	//std::vector<DxfEntity> g_entityList;
-	std::vector<DxfEntityWrapper> g_entityList;
-	std::vector< DxfEntityWrapper> g_writeEntityList;//后续写入与读取分开
+	std::vector<DxfEntityWrapper> g_entityList;//几何实体
+	std::vector< DxfEntityWrapper> g_writeEntityList;//写入几何实体
 	std::string g_currentLayer = "0";//默认图层
 
 private:
-	std::stack<DxfPolylineEntity*> m_polylineStack;//栈容器指针,多段线存储(一个dxf的全部多段线都在此内)
+	std::stack<DxfPolylineEntity*> m_polylineStack;//栈容器指针,多段线存储(一个dxf的全部多段线都用此暂存),读取或写入实体或块都用此缓冲，后续分开
 	bool m_isCurrentEntityPolyline = false;//当前实体是否是多段线
+
+	bool m_isCurrentBoloc = false;//当前是自定义块
+
+	
+public:
+	struct Block
+	{
+		std::string blockName;		// 块名称
+		DxfPoint alignPoint;		//对齐点
+		std::vector<DxfEntityWrapper> g_blockEntityList;//块内实体
+	};
+	std::vector<Block> g_blockList;//每次读取前要清空
+	std::vector<Block> g_writeBlockList;//写入块用此
 };

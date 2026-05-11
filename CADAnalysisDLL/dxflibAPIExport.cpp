@@ -12,7 +12,9 @@
 dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const char* filePath)
 {
 	if (!hdxfDocument)return -1;
-	DeleteAllEntity(hdxfDocument);
+	DeleteAllReadEntity(hdxfDocument);
+	DeleteAllReadBlock(hdxfDocument);
+
 
 	DL_Dxf dxf;
 
@@ -32,7 +34,68 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 
 		std::cout << "共读取到 " << creator->g_entityList.size() << " 个实体。" << std::endl;
 
-		// 验证数据
+		//验证块内数据
+		for (const auto& block : creator->g_blockList)
+		{
+			std::cout << "发现块，名称：" << block.blockName << "对齐点(" << block.alignPoint.x << "," << block.alignPoint.y << "," << block.alignPoint.z << ")" << std::endl;
+			
+			for (const auto& entity : block.g_blockEntityList)
+			{
+				// 根据 entityType 判断具体类型并处理
+				if (entity.type == DxfEntityType::DXF_ENTITY_POINT)
+				{
+					//PointDxf pointDxfData = boost::get<PointDxf>(entity.entityData);
+					DxfPointEntity dxfPointEntity = entity.data.point;
+
+					std::cout << "块内发现点：坐标(" << dxfPointEntity.pointCoord.x << "," << dxfPointEntity.pointCoord.y << "," << dxfPointEntity.pointCoord.z << ")" << std::endl;
+				}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_LINE) {
+					// 获取联合体中的 Line 数据
+					DxfLineEntity dxfLineEntity = entity.data.line;
+					std::cout << "块内发现直线段: 起点(" << dxfLineEntity.start.x << ", " << dxfLineEntity.start.y << "," << dxfLineEntity.start.z <<
+						"),终点（" << dxfLineEntity.end.x << "," << dxfLineEntity.end.y << "," << dxfLineEntity.end.z << "）" << std::endl;
+				}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_CIRCLE) {
+					DxfCircleEntity circleData = entity.data.circle;
+					std::cout << "块内发现圆: 圆心(" << circleData.center.x << "," << circleData.center.y << "," << circleData.center.z << ")，半径：" << circleData.radius << std::endl;
+				}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_ARC)
+				{
+					DxfArcEntity arcData = entity.data.arc;
+					std::cout << "块内发现圆弧:圆心(" << arcData.center.x << "," << arcData.center.y << "," << arcData.center.z << ")，半径：" << arcData.radius << ",开始角度：" << arcData.startAngle << ",结束角度：" << arcData.endAngle << std::endl;
+				}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_TEXT)
+				{
+					DxfTextEntity textData = entity.data.text;
+					std::cout << "块内发现文本:插入位置：(" << textData.insertPoint.x << "," << textData.insertPoint.y << "," << textData.insertPoint.z <<
+						")字高：" << textData.height << "旋转角度：" << textData.rotation << "\r\n文本内容：" << textData.content << std::endl;
+				}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_POLYLINE)
+				{//打印的全是0
+					DxfPolylineEntity polylineData = entity.data.polyline;
+					std::cout << "块内发现多段线:顶点个数" << polylineData.vertexCount << "收尾是否相接：" << polylineData.pFlags << std::endl;
+					DxfPoint* tempPoint = new DxfPoint();
+					for (int i = 0;i < polylineData.vertexCount;i++)
+					{
+						GetVertexAt(hdxfDocument, i, &polylineData, tempPoint);
+						std::cout << "顶点" << i << "(" << tempPoint->x << "," << tempPoint->y << "," << tempPoint->z << ")" << std::endl;
+					}
+					delete tempPoint;
+				}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_INSERT)
+				{
+					DxfInsertEntity insertEntity = entity.data.insert;
+					std::cout << "块内发现块引用:引用名称" << insertEntity.blockName << "插入点：(" << insertEntity.position.x << "," << insertEntity.position.y << "," << insertEntity.position.z <<
+						")X轴缩放" << insertEntity.scaleX << "Y轴缩放" << insertEntity.scaleY << "Z轴缩放" << insertEntity.scaleZ << std::endl;
+				}
+				//else if (entity.entityType == DxfEntity::Type::SPLINE)//未实现
+				//{
+				//	std::cout << "发现样条曲线" << std::endl;
+				//}
+			}
+		}
+
+		// 验证实体数据
 		for (const auto& entity : creator->g_entityList) {//类似C#中的foreach，auto自动推断类型为DxfEntity
 			// 根据 entityType 判断具体类型并处理
 			if (entity.type == DxfEntityType::DXF_ENTITY_POINT)
@@ -79,7 +142,7 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 			{
 				DxfInsertEntity insertEntity = entity.data.insert;
 				std::cout << "发现块引用:引用名称" << insertEntity.blockName << "插入点：(" << insertEntity.position.x << "," << insertEntity.position.y << "," << insertEntity.position.z <<
-					")X轴缩放" << insertEntity.scaleX << "Y轴缩放" << insertEntity.scaleY << std::endl;
+					")X轴缩放" << insertEntity.scaleX << "Y轴缩放" << insertEntity.scaleY <<"Z轴缩放"<<insertEntity.scaleZ<< std::endl;
 			}
 			//else if (entity.entityType == DxfEntity::Type::SPLINE)//未实现
 			//{
@@ -170,7 +233,7 @@ dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, in
 	return 0;
 }
 
-dxflib_EXPORTS_API int __stdcall DeleteAllEntity(DxfDocument_Handle hdxfDocument)
+dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocument)
 {
 	if (!hdxfDocument)return -1;
 
@@ -202,6 +265,33 @@ dxflib_EXPORTS_API int __stdcall DeleteAllEntity(DxfDocument_Handle hdxfDocument
 
 	// 可选：强制释放 vector 预留的内存
 	pDoc->g_entityList.shrink_to_fit();
+}
+
+dxflib_EXPORTS_API int __stdcall DeleteAllReadBlock(DxfDocument_Handle hdxfDocument)
+{
+	if (!hdxfDocument)return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	pDoc->RemoveAndDeletePolylineStack();//多段线栈缓冲
+
+	for (auto& block : pDoc->g_blockList)
+	{//块下实体下的多端线句柄释放
+		for (auto& entity : block.g_blockEntityList)
+		{
+			if (entity.type == DXF_ENTITY_POLYLINE)
+			{
+				PointList* pPoints = (PointList*)entity.data.polyline._vertexHandle;
+				if (pPoints != nullptr)
+				{
+					delete pPoints;
+					entity.data.polyline._vertexHandle = nullptr;
+				}
+			}
+		}
+	}
+	pDoc->g_blockList.clear();
+	pDoc->g_blockList.shrink_to_fit();
 }
 
 //dxflib_EXPORTS_API int __stdcall WriteSingleEntity(DxfDocument_Handle hdxfDocument, DxfEntityWrapper addEntity)
@@ -236,7 +326,7 @@ dxflib_EXPORTS_API int __stdcall DeleteAllEntity(DxfDocument_Handle hdxfDocument
 //	return 0;
 //}
 
-dxflib_EXPORTS_API int __stdcall WriteSingleEntityTwo(
+dxflib_EXPORTS_API int __stdcall WriteSingleEntity(
 	DxfDocument_Handle hdxfDocument,
 	const DxfEntityWrapper* pWrapper
 )
@@ -245,30 +335,30 @@ dxflib_EXPORTS_API int __stdcall WriteSingleEntityTwo(
 
 	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
 
-	// 1. 获取当前即将插入的索引（即当前的 size）
+	// 获取当前即将插入的索引（即当前的 size）
 	//int newIndex = static_cast<int>(pDoc->g_entityList.size());
 	int newIndex = static_cast<int>(pDoc->g_writeEntityList.size());
 
-	// 2. 安全拷贝数据
+	// 安全拷贝数据
 	DxfEntityWrapper localEntity = *pWrapper;
 
 	if (localEntity.type == DXF_ENTITY_POLYLINE)
 	{
-		// 3. 多段线特殊处理：创建 vector
+		// 多段线特殊处理：创建 vector
 		std::vector<DxfPoint>* pPoints = new std::vector<DxfPoint>();
 		if (localEntity.data.polyline.vertexCount > 0) {
 			pPoints->reserve(localEntity.data.polyline.vertexCount);
 		}
 
-		// 4. 绑定句柄（存入内部实体）
+		// 绑定句柄（存入内部实体）
 		localEntity.data.polyline._vertexHandle = static_cast<DxfDataBuffer_Handle>(pPoints);
 	}
 
-	// 5. 存入列表
+	// 存入列表
 	//pDoc->g_entityList.push_back(localEntity);
 	pDoc->g_writeEntityList.push_back(localEntity);
 
-	// 6. 返回索引
+	// 返回索引
 	return newIndex;
 }
 
@@ -279,7 +369,7 @@ dxflib_EXPORTS_API int __stdcall WriteSingleEntityTwo(
 //	return 0;
 //}
 
-dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakTwo(
+dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakEntity(
 	DxfDocument_Handle hdxfDocument,
 	int entityIndex,
 	const DxfPoint* pPoint
@@ -299,7 +389,7 @@ dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakTwo(
 
 	// 再次确认类型，防止传错索引（比如把圆的索引传进来了）
 	if (targetEntity.type != DXF_ENTITY_POLYLINE) return -1;
-	// 4还原句柄并添加数据
+	// 还原句柄并添加数据
 	// 从内部实体中取出 _vertexHandle
 	DxfDataBuffer_Handle hVertices = targetEntity.data.polyline._vertexHandle;
 
@@ -307,11 +397,125 @@ dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakTwo(
 		//typedef std::vector<DxfPoint> PointVec;
 		PointList* pVec = reinterpret_cast<PointList*>(hVertices);
 		if (pVec->size() >= targetEntity.data.polyline.vertexCount)return -1;
-		pVec->push_back(*pPoint);
+		//DxfPoint tempPoint = { pPoint->x,pPoint->y,pPoint->z };
+		//pVec->push_back(tempPoint);
+		pVec->push_back(*pPoint);//将备份送入数组
 	}
 	return 0;
 }
-dxflib_EXPORTS_API int __stdcall DeleteWriteVector(DxfDocument_Handle hdxfDocument)
+dxflib_EXPORTS_API int __stdcall WriteSingleBlock(
+	DxfDocument_Handle hdxfDocument,
+	const char* blockName,
+	const DxfPoint* pPoint,
+	const DxfEntityWrapper* pWrapper
+)
+{
+	if (!hdxfDocument || !pWrapper || !pPoint) return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	int blockIndex = -1;//实体要写入块的索引
+	int newIndex = -1;//写入块下实体的索引
+
+	for (int i = 0;i < pDoc->g_writeBlockList.size();i++)
+	{
+		if (pDoc->g_writeBlockList[i].blockName == blockName)
+		{
+			blockIndex = i;
+
+			DxfEntityWrapper localEntity = *pWrapper;
+
+			if (localEntity.type == DXF_ENTITY_POLYLINE)
+			{
+				// 多段线特殊处理：创建 vector
+				std::vector<DxfPoint>* pPoints = new std::vector<DxfPoint>();
+				if (localEntity.data.polyline.vertexCount > 0) {
+					pPoints->reserve(localEntity.data.polyline.vertexCount);
+				}
+
+				// 绑定句柄（存入内部实体）
+				localEntity.data.polyline._vertexHandle = static_cast<DxfDataBuffer_Handle>(pPoints);
+			}
+			newIndex = pDoc->g_writeBlockList[i].g_blockEntityList.size();//size个数，推送后此个数和最后索引相同了
+			// 存入列表
+
+			pDoc->g_writeBlockList[i].g_blockEntityList.push_back(localEntity);
+			break;
+		}
+	}
+
+	if (blockIndex == -1)
+	{//没有对应块时创建新的
+		dxflibCreationClass::Block tempBlock;
+		tempBlock.blockName = blockName;
+		tempBlock.alignPoint = *pPoint;//对齐点
+
+		blockIndex = pDoc->g_writeBlockList.size();//size个数，推送后此个数和最后索引相同了
+
+		DxfEntityWrapper localEntity = *pWrapper;
+
+		if (localEntity.type == DXF_ENTITY_POLYLINE)
+		{
+			// 多段线特殊处理：创建 vector
+			std::vector<DxfPoint>* pPoints = new std::vector<DxfPoint>();
+			if (localEntity.data.polyline.vertexCount > 0) {
+				pPoints->reserve(localEntity.data.polyline.vertexCount);
+			}
+
+			// 绑定句柄（存入内部实体）
+			localEntity.data.polyline._vertexHandle = static_cast<DxfDataBuffer_Handle>(pPoints);
+		}
+		newIndex = 0;
+		// 存入列表
+
+		tempBlock.g_blockEntityList.push_back(localEntity);//拷贝
+
+		pDoc->g_writeBlockList.push_back(tempBlock);
+	}
+
+	// 返回索引
+	return newIndex;
+}
+
+dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakBlock(
+	DxfDocument_Handle hdxfDocument,
+	const char* blockName,
+	int entityIndex,
+	const DxfPoint* pPoint
+)
+{
+	if (!hdxfDocument || !pPoint) return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	for (int i = 0;i < pDoc->g_writeBlockList.size();i++)
+	{
+		if (pDoc->g_writeBlockList[i].blockName == blockName)
+		{//点要加入的块
+			if (entityIndex < 0 || entityIndex >= pDoc->g_writeBlockList[i].g_blockEntityList.size()) return -1;
+			DxfEntityWrapper& targetEntity = pDoc->g_writeBlockList[i].g_blockEntityList[entityIndex];
+
+			//确定实体是多段线
+			if (targetEntity.type != DXF_ENTITY_POLYLINE) return -1;
+
+			DxfDataBuffer_Handle hVertices = targetEntity.data.polyline._vertexHandle;
+
+			if (hVertices) {
+				//typedef std::vector<DxfPoint> PointVec;
+				PointList* pVec = reinterpret_cast<PointList*>(hVertices);
+				if (pVec->size() >= targetEntity.data.polyline.vertexCount)return -1;
+				//DxfPoint tempPoint = { pPoint->x,pPoint->y,pPoint->z };
+				//pVec->push_back(tempPoint);
+				pVec->push_back(*pPoint);//将备份送入数组
+			}
+			return 0;
+		}
+	}
+}
+
+
+
+dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxfDocument)
 {
 	if (!hdxfDocument)return -1;
 
@@ -345,6 +549,34 @@ dxflib_EXPORTS_API int __stdcall DeleteWriteVector(DxfDocument_Handle hdxfDocume
 	pDoc->g_entityList.shrink_to_fit();
 	return 0;
 }
+
+dxflib_EXPORTS_API int __stdcall DeleteWriteVectorBlock(DxfDocument_Handle hdxfDocument)
+{
+	if (!hdxfDocument)return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+	
+	pDoc->RemoveAndDeletePolylineStack();//多段线栈缓冲
+
+	for (auto& block : pDoc->g_writeBlockList)
+	{//块下实体下的多端线句柄释放
+		for (auto& entity : block.g_blockEntityList)
+		{
+			if (entity.type == DXF_ENTITY_POLYLINE)
+			{
+				PointList* pPoints = (PointList*)entity.data.polyline._vertexHandle;
+				if (pPoints != nullptr)
+				{
+					delete pPoints;
+					entity.data.polyline._vertexHandle = nullptr;
+				}
+			}
+		}
+	}
+	pDoc->g_writeBlockList.clear();
+	pDoc->g_writeBlockList.shrink_to_fit();
+}
+
 dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const char* path)
 {
 	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
@@ -399,14 +631,14 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 			DL_Codes::red,
 			100,
 			"CONTINUOUS", 1.0));
-	//图层2
-	dxf->writeLayer(*dw,
-		DL_LayerData("anotherlayer", 0),
-		DL_Attributes(
-			std::string(""),
-			DL_Codes::black,
-			100,
-			"CONTINUOUS", 1.0));
+	////图层2
+	//dxf->writeLayer(*dw,
+	//	DL_LayerData("anotherlayer", 0),
+	//	DL_Attributes(
+	//		std::string(""),
+	//		DL_Codes::black,
+	//		100,
+	//		"CONTINUOUS", 1.0));
 
 
 	dw->tableEnd();
@@ -453,18 +685,207 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 	dxf->writeBlock(*dw, DL_BlockData("*Paper_Space0", 0, 0.0, 0.0, 0.0));
 	dxf->writeEndBlock(*dw, "*Paper_Space0");//默认布局
 
-#pragma region 自定义块，定义重复图形，画之前登记的
-	//dxf->writeBlock(*dw, DL_BlockData("myblock1", 0, 0.0, 0.0, 0.0));
-	//// ...
-	//// write block entities e.g. with dxf->writeLine(), ..
-	//// ...
-	//dxf->writeEndBlock(*dw, "myblock1");
+	for (const auto& block : pDoc->g_writeBlockList)//C++的遍历
+	{
 
-	//dxf->writeBlock(*dw, DL_BlockData("myblock2", 0, 0.0, 0.0, 0.0));
-	//// ...
-	//// write block entities e.g. with dxf->writeLine(), ..
-	//// ...
-	//dxf->writeEndBlock(*dw, "myblock2");
+		dxf->writeBlock(*dw, DL_BlockData(block.blockName,//块名称
+			0, //标志
+			block.alignPoint.x, block.alignPoint.y, block.alignPoint.z));//插入块的对齐点，(0,0,0)就是块的左下角和插入的位置对齐，如插入到（10,20,0），那么块左下角和（10,20,0）对齐
+		
+		for (const auto& entity : block.g_blockEntityList)
+		{//块内实体遍历
+			switch (entity.type)
+			{
+			case DxfEntityType::DXF_ENTITY_POINT:
+			{//点
+				DxfPointEntity tempEntity = entity.data.point;
+				dxf->writePoint(//写入点实体
+					*dw,
+					DL_PointData(tempEntity.pointCoord.x,
+						tempEntity.pointCoord.y,
+						tempEntity.pointCoord.z),
+					DL_Attributes("0"/*"mainlayer"*/, 256, -1, "BYLAYER", 1.0));//在mainlayer图层上绘画，没有此图层就回到默认图层0
+				//公共属性写在DL_Attributes中，暂时默认
+			}
+			break;
+
+			case DxfEntityType::DXF_ENTITY_LINE:
+			{//线
+				DxfLineEntity tempEntity = entity.data.line;
+				dxf->writeLine(//写入线
+					*dw,
+					DL_LineData(tempEntity.start.x,   // start point
+						tempEntity.start.y,
+						tempEntity.start.z,
+						tempEntity.end.x,   // end point
+						tempEntity.end.y,
+						tempEntity.end.z),
+					DL_Attributes("0"/*"mainlayer"*/, 256, -1, "BYLAYER", 1.0));
+			}
+			break;
+
+			case DxfEntityType::DXF_ENTITY_CIRCLE:
+			{//圆
+				DxfCircleEntity tempEntity = entity.data.circle;
+				dxf->writeCircle(
+					*dw,
+					DL_CircleData(    // 圆心坐标 (cx, cy, cz) 和 半径 (radius)
+						tempEntity.center.x,         // cx - 圆心 X 坐标
+						tempEntity.center.y,         // cy - 圆心 Y 坐标  
+						tempEntity.center.z,          // cz - 圆心 Z 坐标
+						tempEntity.radius          // radius - 半径
+					),
+					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
+			}
+			break;
+
+			case DxfEntityType::DXF_ENTITY_ARC:
+			{//圆弧
+				DxfArcEntity tempEntity = entity.data.arc;
+				dxf->writeArc(
+					*dw,
+					DL_ArcData(
+						tempEntity.center.x,
+						tempEntity.center.y,
+						tempEntity.center.z,
+						tempEntity.radius,
+						tempEntity.startAngle,
+						tempEntity.endAngle
+					),
+					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
+			}
+			break;
+
+			case DxfEntityType::DXF_ENTITY_TEXT:
+			{//按单行文本写入
+				DxfTextEntity tempEntity = entity.data.text;
+				dxf->writeText(
+					*dw,
+					DL_TextData(
+						tempEntity.insertPoint.x,
+						tempEntity.insertPoint.y,
+						tempEntity.insertPoint.z,//插入点
+						tempEntity.insertPoint.x,
+						tempEntity.insertPoint.y,
+						tempEntity.insertPoint.z,//默认左对齐与插入点相同
+						tempEntity.height,
+						1.0,//宽高比(大于1宽更大)
+						0,//生成标志，0正常，2镜像，4倒置
+						1,//水平对齐1左对齐，2居中，3右对齐，4对齐（拉伸以适应两点），5中间(几何中心)
+						2,//垂直对齐1底部，2中间，3顶部
+						tempEntity.content,
+						"Standard",//样式名
+						tempEntity.rotation
+					),
+					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
+			}
+			break;
+
+			case DxfEntityType::DXF_ENTITY_POLYLINE:
+			{//多段线
+				DxfPolylineEntity tempEntity = entity.data.polyline;
+				dxf->writePolyline(
+					*dw,
+					DL_PolylineData(
+						tempEntity.vertexCount,
+						0,//2D通常设置为0
+						0,//2D通常设置为0
+						tempEntity.pFlags,
+						0.0//标高，2D的多个顶点都用此，3D忽略此
+					),
+					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
+				if (tempEntity._vertexHandle == nullptr)continue;
+				for (const auto& vertex : *(PointList*)(tempEntity._vertexHandle))//遍历左边是对象
+				{
+					dxf->writeVertex(
+						*dw,
+						DL_VertexData(
+							vertex.x,
+							vertex.y,
+							vertex.z,
+							0//顶点与顶点之间的弧度，0就是直线。大于0凸圆弧，小于0凹圆弧，值=tan(圆弧圆心角/4)
+						)
+					);
+				}
+
+				dxf->writePolylineEnd(*dw);
+			}
+			break;
+
+			case DxfEntityType::DXF_ENTITY_INSERT:
+			{//块插入
+				DxfInsertEntity tempEntity = entity.data.insert;
+				dxf->writeInsert(
+					*dw,
+					DL_InsertData(
+						tempEntity.blockName,
+						tempEntity.position.x,
+						tempEntity.position.y,
+						tempEntity.position.z,
+						tempEntity.scaleX,
+						tempEntity.scaleY,
+						tempEntity.scaleZ,
+						tempEntity.rotation,
+						1,//插入列矩阵个数
+						1,//插入行矩阵个数
+						0.0,//列间距
+						0.0//行间距
+					),
+					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
+			}
+			break;
+
+			default:
+				break;
+			}
+		}
+
+
+		dxf->writeEndBlock(*dw, block.blockName);
+	}
+
+#pragma region 自定义块，定义重复图形，插入块之前在此登记的
+
+//	for (int i = 0;i < pDoc->g_writeEntityList.size();i++)//此为用引用判断，后续改为真正的块
+//	{//块要提前定义
+//		if (pDoc->g_writeEntityList[i].type == DxfEntityType::DXF_ENTITY_INSERT)
+//		{
+//			DxfInsertEntity tempEntity = pDoc->g_writeEntityList[i].data.insert;
+//			dxf->writeBlock(*dw, DL_BlockData(tempEntity.blockName,//块名称
+//				0, //标志
+//				0.0, 0.0, 0.0));//插入块的对齐点，(0,0,0)就是块的左下角和插入的位置对齐，如插入到（10,20,0），那么块左下角和（10,20,0）对齐
+//#pragma region 测试块内容
+//			// ========== 在块内部绘制图形 ==========
+//
+//		// 画一个圆：圆心在 (5,5)，半径 5.0
+//			dxf->writeCircle(*dw,
+//				DL_CircleData(5.0,    // 圆心 X
+//					5.0,    // 圆心 Y
+//					0.0,    // 圆心 Z
+//					5.0),   // 半径
+//				DL_Attributes("mainlayer", 256, -1, "BYLAYER", 1.0));
+//
+//			// 画一条直线：从 (0,5) 到 (10,5)（圆的水平直径）
+//			dxf->writeLine(*dw,
+//				DL_LineData(0.0, 5.0, 0.0,    // 起点 X,Y,Z
+//					10.0, 5.0, 0.0),  // 终点 X,Y,Z
+//				DL_Attributes("mainlayer", 256, -1, "BYLAYER", 1.0));
+//#pragma endregion
+//
+//			dxf->writeEndBlock(*dw, tempEntity.blockName);
+//		}
+//	}
+//	//dxf->writeBlock(*dw, DL_BlockData("myblock1", 0, 0.0, 0.0, 0.0));
+//	//// ...
+//	//// write block entities e.g. with dxf->writeLine(), ..
+//	//// ...
+//	//dxf->writeEndBlock(*dw, "myblock1");
+//
+//	//dxf->writeBlock(*dw, DL_BlockData("myblock2", 0, 0.0, 0.0, 0.0));
+//	//// ...
+//	//// write block entities e.g. with dxf->writeLine(), ..
+//	//// ...
+//	//dxf->writeEndBlock(*dw, "myblock2");
 #pragma endregion
 
 	dw->sectionEnd();
@@ -532,7 +953,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 					tempEntity.radius,
 					tempEntity.startAngle,
 					tempEntity.endAngle
-					),
+				),
 				DL_Attributes("mainlayer", 125, -1, "BYLAYER", 1.0));
 		}
 		break;
@@ -575,12 +996,44 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 					0.0//标高，2D的多个顶点都用此，3D忽略此
 				),
 				DL_Attributes("mainlayer", 125, -1, "BYLAYER", 1.0));
+			if (tempEntity._vertexHandle == nullptr)continue;
+			for (const auto& vertex : *(PointList*)(tempEntity._vertexHandle))//遍历左边是对象
+			{
+				dxf->writeVertex(
+					*dw,
+					DL_VertexData(
+						vertex.x,
+						vertex.y,
+						vertex.z,
+						0//顶点与顶点之间的弧度，0就是直线。大于0凸圆弧，小于0凹圆弧，值=tan(圆弧圆心角/4)
+					)
+				);
+			}
+
+			dxf->writePolylineEnd(*dw);
 		}
 		break;
 
 		case DxfEntityType::DXF_ENTITY_INSERT:
-		{//块
-
+		{//块插入
+			DxfInsertEntity tempEntity = pDoc->g_writeEntityList[i].data.insert;
+			dxf->writeInsert(
+				*dw,
+				DL_InsertData(
+					tempEntity.blockName,
+					tempEntity.position.x,
+					tempEntity.position.y,
+					tempEntity.position.z,
+					tempEntity.scaleX,
+					tempEntity.scaleY,
+					tempEntity.scaleZ,
+					tempEntity.rotation,
+					1,//插入列矩阵个数
+					1,//插入行矩阵个数
+					0.0,//列间距
+					0.0//行间距
+				),
+				DL_Attributes("mainlayer", 125, -1, "BYLAYER", 1.0));
 		}
 		break;
 

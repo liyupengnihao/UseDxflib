@@ -13,38 +13,69 @@ int main() {
 	//ReadDXF("E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/myfile.dxf");
 	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\newfile.dxf");
 	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\newfile.txt");
-	ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/demo.dxf");
 	//ReadDXF("E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileTwo.dxf");
 	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileFour.dxf");
-	DeleteAllEntity(hdxfDocument);
 
+    //ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/demo.dxf");
+    //ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
+    ReadDXF(hdxfDocument, "C:/Users/Public/Nwt/cache/recv/程佳佳/8985FDB-FD-007-00.DXF");
+
+
+#pragma region 重写dxf
+	DeleteAllReadEntity(hdxfDocument);
+
+    //
 	DxfEntityWrapper poly;
-	poly.type = DxfEntityType::DXF_ENTITY_POLYLINE;
-	poly.data.polyline.vertexCount = 4;
-	poly.data.polyline.pFlags = 0;
+    ///点
+    poly.type = DxfEntityType::DXF_ENTITY_POINT;
+    poly.data.point.pointCoord = { 25,95,0 };
 
-	int inIndex = WriteSingleEntityTwo(hdxfDocument, &poly);
+    WriteSingleEntity(hdxfDocument, &poly);
 
-    if (inIndex >= 0) {
-        
-        DxfPoint pt;
-        pt.x = 0; pt.y = 0; pt.z = 0;
+    ///线
+    poly.type = DxfEntityType::DXF_ENTITY_LINE;
+    poly.data.line.start = { 30,10,0 };
+    poly.data.line.end = { 70,10,0 };
 
-        // 把文档句柄和索引传回去
-        WriteSinglePolylinePeakTwo(hdxfDocument, inIndex, &pt);
+    WriteSingleEntity(hdxfDocument, &poly);
 
-        pt.x = 10; pt.y = 0; pt.z = 0;
-        WriteSinglePolylinePeakTwo(hdxfDocument, inIndex, &pt);
+    //圆
+    poly.type = DxfEntityType::DXF_ENTITY_CIRCLE;
+    poly.data.circle.center = { 50,50,0 };
+    poly.data.circle.radius = 20;
 
-        pt.x = 20; pt.y = 30; pt.z = 0;
-        WriteSinglePolylinePeakTwo(hdxfDocument, inIndex, &pt);
-    }
+    WriteSingleEntity(hdxfDocument, &poly);
 
+    //圆弧
+    poly.type = DxfEntityType::DXF_ENTITY_ARC;
+    poly.data.arc.center = { 100,100,0 };
+    poly.data.arc.radius = 50;
+    poly.data.arc.startAngle = 0;
+    poly.data.arc.endAngle = 90;
+
+    WriteSingleEntity(hdxfDocument, &poly);
+
+    //文字
+    std::string tempString = "TestSingleText";
+    poly.type = DxfEntityType::DXF_ENTITY_TEXT;
+    poly.data.text.insertPoint = { 50,50,0 };
+    strncpy_s(
+        poly.data.text.content,
+        sizeof(poly.data.text.content),
+        tempString.c_str(),
+        _TRUNCATE
+    );
+    poly.data.text.height = 5;
+    poly.data.text.rotation = 0;
+
+    WriteSingleEntity(hdxfDocument, &poly);
+
+    //多段线
     poly.type = DxfEntityType::DXF_ENTITY_POLYLINE;
     poly.data.polyline.vertexCount = 5;
-    poly.data.polyline.pFlags = 0;
+    poly.data.polyline.pFlags = 1;
 
-    inIndex = WriteSingleEntityTwo(hdxfDocument, &poly);
+    int inIndex = WriteSingleEntity(hdxfDocument, &poly);
 
     if (inIndex >= 0) {
 
@@ -52,14 +83,134 @@ int main() {
         pt.x = 100; pt.y = 0; pt.z = 0;
 
         // 把文档句柄和索引传回去
-        WriteSinglePolylinePeakTwo(hdxfDocument, inIndex, &pt);
+        WriteSinglePolylinePeakEntity(hdxfDocument, inIndex, &pt);
 
-        pt.x = 10; pt.y = 90; pt.z = 0;
-        WriteSinglePolylinePeakTwo(hdxfDocument, inIndex, &pt);
+        pt.x = 100; pt.y = 50; pt.z = 0;
+        WriteSinglePolylinePeakEntity(hdxfDocument, inIndex, &pt);
 
-        pt.x = 50; pt.y = 50; pt.z = 0;
-        WriteSinglePolylinePeakTwo(hdxfDocument, inIndex, &pt);
+        pt.x = 50; pt.y = 100; pt.z = 0;
+        WriteSinglePolylinePeakEntity(hdxfDocument, inIndex, &pt);
+
+        pt.x = 0; pt.y = 30; pt.z = 0;
+        WriteSinglePolylinePeakEntity(hdxfDocument, inIndex, &pt);
     }
+
+    //块引用
+    tempString = "TestblockOne";
+    poly.type = DxfEntityType::DXF_ENTITY_INSERT;
+    strncpy_s(
+        poly.data.insert.blockName,
+        sizeof(poly.data.insert.blockName),
+        tempString.c_str(),
+        _TRUNCATE
+    );
+    poly.data.insert.position = { 0,120,0 };
+    poly.data.insert.scaleX = 1.0;
+    poly.data.insert.scaleY = 1.0;
+    poly.data.insert.scaleZ = 1.0;
+    poly.data.insert.rotation = 0;
+    WriteSingleEntity(hdxfDocument, &poly);
+
+    tempString = "TestblockOne";
+    poly.type = DxfEntityType::DXF_ENTITY_INSERT;
+    strncpy_s(
+        poly.data.insert.blockName,
+        sizeof(poly.data.insert.blockName),
+        tempString.c_str(),
+        _TRUNCATE
+    );
+    poly.data.insert.position = { 0,0,0 };
+    poly.data.insert.scaleX = 1.0;
+    poly.data.insert.scaleY = 1.0;
+    poly.data.insert.scaleZ = 1.0;
+    poly.data.insert.rotation = 0;
+    WriteSingleEntity(hdxfDocument, &poly);
+
+    tempString = "TestblockTwo";
+
+    poly.type = DxfEntityType::DXF_ENTITY_INSERT;
+    strncpy_s(
+        poly.data.insert.blockName,
+        sizeof(poly.data.insert.blockName),
+        tempString.c_str(),
+        _TRUNCATE
+    );
+    poly.data.insert.position = { -20,-20,0 };
+    poly.data.insert.scaleX = 1.0;
+    poly.data.insert.scaleY = 1.0;
+    poly.data.insert.scaleZ = 1.0;
+    poly.data.insert.rotation = 0;
+    WriteSingleEntity(hdxfDocument, &poly);
+
+#pragma region  写入块
+    poly.type = DxfEntityType::DXF_ENTITY_LINE;
+    poly.data.line.start = { 0,5,0 };
+    poly.data.line.end = { 15,5,0 };
+
+    DxfPoint alignPoint = { 0,0,0 };//与引用的插入点对齐的点
+
+    WriteSingleBlock(
+        hdxfDocument,
+        "TestblockOne",
+        &alignPoint,
+        &poly
+    );
+    poly.type = DxfEntityType::DXF_ENTITY_CIRCLE;
+    poly.data.circle.center = { 5,5,0 };
+    poly.data.circle.radius = 5;
+    WriteSingleBlock(
+        hdxfDocument,
+        "TestblockOne",
+        &alignPoint,
+        &poly
+    );
+
+
+#pragma region  新块，内为多段线
+    poly.type = DxfEntityType::DXF_ENTITY_POLYLINE;
+    poly.data.polyline.vertexCount = 5;
+    poly.data.polyline.pFlags = 1;
+
+    inIndex = WriteSingleBlock(
+        hdxfDocument,
+        "TestblockTwo",
+        &alignPoint,
+        &poly
+    );
+
+    DxfPoint pt = { -2,-2,0 };
+    WriteSinglePolylinePeakBlock(
+        hdxfDocument,
+        "TestblockTwo",
+        inIndex,
+        &pt
+    );
+
+    pt = { -20,-2,0 };
+    WriteSinglePolylinePeakBlock(
+        hdxfDocument,
+        "TestblockTwo",
+        inIndex,
+        &pt
+    );
+
+    pt = { -20,-20,0 };
+    WriteSinglePolylinePeakBlock(
+        hdxfDocument,
+        "TestblockTwo",
+        inIndex,
+        &pt
+    );
+
+#pragma endregion
+
+#pragma endregion
+
+
+    WriteDXF(hdxfDocument, "newFive.dxf");
+
+#pragma endregion
+
 	return 0;
 }
 #else

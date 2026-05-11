@@ -150,7 +150,7 @@ extern "C"
 	} DxfPolylineEntity;
 
 	/// <summary>
-	/// 对应内部Insert
+	/// 对应内部Insert，哪个块插入哪个位置
 	/// 块引用(实体)
 	/// </summary>
 	typedef struct DxfInsertEntity {
@@ -159,6 +159,7 @@ extern "C"
 		DxfPoint position;      // 插入点
 		double scaleX;          // X轴缩放
 		double scaleY;          // Y轴缩放
+		double scaleZ;
 		double rotation;        // 旋转角度
 	} DxfInsertEntity;
 
@@ -264,22 +265,22 @@ extern "C"
 	dxflib_EXPORTS_API int __stdcall DestroyDxfDocument(DxfDocument_Handle hdxfDocument);
 
 	/// <summary>
-	/// 读取DXF
+	/// 读取DXF，读取前会先销毁之前的缓存实体与块
 	/// </summary>
 	/// <param name="filePath"></param>
 	/// <returns></returns>
 	dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const char* filePath);
 
-	///////////////////////////////////////////////////////////////////////////得到实体相关
+	///////////////////////////////////////////////////////////////////////////得到段相关(块，实体)
 	/// <summary>
-	/// 得到实体总数,读取前会先销毁
+	/// 得到实体总数,
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <returns>实体总数</returns>
 	dxflib_EXPORTS_API int __stdcall GetEntityCount(DxfDocument_Handle hdxfDocument);
 
 	/// <summary>
-	/// 按索引将指针指向对应的结构体
+	/// 按索引将指针指向对应的结构体，DxfEntityWrapper联合体下多段线的顶点成员为句柄要拿顶点的值要用用函数GetVertexAt
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <param name="index"></param>
@@ -292,12 +293,18 @@ extern "C"
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <returns></returns>
-	dxflib_EXPORTS_API int __stdcall DeleteAllEntity(DxfDocument_Handle hdxfDocument);
+	dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocument);
+	/// <summary>
+	/// 销毁句柄下读取的全部块
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <returns></returns>
+	dxflib_EXPORTS_API int __stdcall DeleteAllReadBlock(DxfDocument_Handle hdxfDocument);
 
 
 	/////////////////////////////////////////得到多段线实体数据相关
 	/// <summary>
-	/// 得到多段线的顶点数量(多段线结构体内有句柄，)
+	/// 得到多段线的顶点数量(DxfPolylineEntity结构体句柄下的顶点数)
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <param name="polylineEntity"></param>
@@ -305,11 +312,11 @@ extern "C"
 	dxflib_EXPORTS_API int __stdcall GetVertexCount(DxfDocument_Handle hdxfDocument, const DxfPolylineEntity* polylineEntity);
 
 	/// <summary>
-	/// 按索引将指针指向多段线对应顶点结构体
+	/// 按索引将指针指向多段线对应顶点结构体DxfPolylineEntity结构体内有句柄
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <param name="index"></param>
-	/// <param name="outPoint"></param>
+	/// <param name="outPoint">数据写入指针内存下（结构体内全为POD数据类型）</param>
 	/// <returns></returns>
 	dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, int index, const DxfPolylineEntity* polylineEntity, DxfPoint* outPoint);
 
@@ -322,34 +329,69 @@ extern "C"
 
 
 	/// <summary>
-	/// 推送单个实体到动态数组，为多段线还需使用WriteSinglePolylinePeakTwo向实体中写入顶点
+	/// 推送单个实体到动态数组，为多段线还需使用WriteSinglePolylinePeakEntity向实体中写入顶点
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <param name="pWrapper"></param>
-	/// <returns>返回最后一个索引的实体在动态数组中的索引</returns>
-	dxflib_EXPORTS_API int __stdcall WriteSingleEntityTwo(
+	/// <returns>返回最后一个索引的实体在动态数组中的索引,-1失败</returns>
+	dxflib_EXPORTS_API int __stdcall WriteSingleEntity(
 		DxfDocument_Handle hdxfDocument,
-		const DxfEntityWrapper* pWrapper
+		const DxfEntityWrapper* pWrapper//库内复制值
 	);
 
 	/// <summary>
 	/// 加入多段线顶点，实体索引相同就一直向后加
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
-	/// <param name="entityIndex">WriteSingleEntityTwo写入多段线时返回的索引</param>
+	/// <param name="entityIndex">WriteSingleEntity写入多段线时返回的索引</param>
 	/// <param name="pPoint"></param>
 	/// <returns>0成功，-1失败</returns>
-	dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakTwo(
+	dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakEntity(
 		DxfDocument_Handle hdxfDocument,
+		int entityIndex,
+		const DxfPoint* pPoint//pod类型可以跨dll传指针访问对象成员,库内拷贝值，库外销毁拷贝值还在
+	);
+
+	/// <summary>
+	/// 写入块内容
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <param name="blockName">块名称,没有块会创建新块</param>
+	/// <param name="pWrapper">块实体</param>
+	/// <returns>返回当前块下当前实体的索引,-1失败</returns>
+	dxflib_EXPORTS_API int __stdcall WriteSingleBlock(
+		DxfDocument_Handle hdxfDocument,
+		const char* blockName,
+		const DxfPoint* pPoint,
+		const DxfEntityWrapper* pWrapper
+	);
+	/// <summary>
+	/// 加入多段线顶点，块相同且索引相同就一直向后加
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <param name="blockName"></param>
+	/// <param name="entityIndex"></param>
+	/// <param name="pPoint"></param>
+	/// <returns></returns>
+	dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakBlock(
+		DxfDocument_Handle hdxfDocument,
+		const char* blockName,
 		int entityIndex,
 		const DxfPoint* pPoint
 	);
+
 	/// <summary>
-	/// 删除写入dxf的动态数组内容
+	/// 删除要写入dxf的实例动态数组内容
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <returns></returns>
-	dxflib_EXPORTS_API int __stdcall DeleteWriteVector(DxfDocument_Handle hdxfDocument);
+	dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxfDocument);
+	/// <summary>
+	/// 删除要写入dxf的块动态数组内容
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <returns></returns>
+	dxflib_EXPORTS_API int __stdcall DeleteWriteVectorBlock(DxfDocument_Handle hdxfDocument);
 
 	/// <summary>
 	/// 将实体数组写入dxf中，无文件创建有文件修改
