@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "pch.h"
+//#include "pch.h"
 
 #ifdef CADANALYSISDLL_EXPORTS//导入导出库
 #define dxflib_EXPORTS_API __declspec(dllexport)
@@ -16,7 +16,8 @@ extern "C"
 	//多段线和实体个数要是可变大小，VC++6.0与VS2026ABI(二进制接口)不一样，无法使用各自容器
 
 	typedef void* DxfDocument_Handle;       // 文档句柄（替代 类dxflibCreationClass）
-	typedef void* DxfDataBuffer_Handle;     // 多段线内每个顶点的数据（替代 DxfPoint* 数组指针）,对应类型typedef std::vector<DxfPoint> PointList;
+	//typedef void* DxfDataBuffer_Handle;     // 多段线内每个顶点的数据（替代 DxfPoint* 数组指针）,对应类型typedef std::vector<DxfPoint> PointList;
+	typedef int DxfDataBuffer_Handle;     // 多段线内每个顶点的数据（替代 DxfPoint* 数组指针）,对应类型typedef std::vector<DxfPoint> PointList;
 
 	/// <summary>
 	/// 记录bool

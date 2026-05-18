@@ -17,8 +17,8 @@ int main() {
 	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileFour.dxf");
 
     //ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/demo.dxf");
-    //ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
-    ReadDXF(hdxfDocument, "C:/Users/Public/Nwt/cache/recv/程佳佳/8985FDB-FD-007-00.DXF");
+    ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
+    //ReadDXF(hdxfDocument, "C:/Users/Public/Nwt/cache/recv/程佳佳/8985FDB-FD-007-00.DXF");
 
 
 #pragma region 重写dxf
@@ -207,7 +207,8 @@ int main() {
 #pragma endregion
 
 
-    WriteDXF(hdxfDocument, "newFive.dxf");
+    //WriteDXF(hdxfDocument, "newFive.dxf");
+    WriteDXF(hdxfDocument, "newsix.dxf");
 
 #pragma endregion
 
