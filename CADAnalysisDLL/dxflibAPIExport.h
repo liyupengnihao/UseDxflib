@@ -128,21 +128,6 @@ extern "C"
 		double rotation;        // 旋转角度
 	} DxfTextEntity;
 
-	/// <summary>
-	/// 对应内部Polyline
-	/// 多线段(实体)
-	/// </summary>
-	//typedef struct DxfPolylineEntity {
-	//	DxfEntityAttr attr;     // 公共属性
-
-	//	// 顶点数组（动态分配）
-	//	DxfPoint* vertices;     // 顶点列表指针
-	//	int vertexCount;        // 顶点数量
-	//	int vertexCapacity;     // 数组容量（内部使用）
-
-	//	DxfBool isClosed;       // 是否闭合
-	//} DxfPolylineEntity;
-
 	typedef struct DxfPolylineEntity {
 		//DxfEntityAttr attr;
 		int vertexCount;           // 顶点数量
@@ -228,31 +213,7 @@ extern "C"
 		} data;
 	} DxfEntityWrapper;
 
-	//不给VC6，内部函数来给内容
-	///// <summary>
-	///// dxf文档容器
-	///// </summary>
-	//typedef struct DxfDocument {
-	//	// 图元数组（动态分配）
-	//	DxfEntityWrapper* entities;		// 图元指针数组,(VS2026与VC)内存管理有问题（别用指针用句柄）
-	//	int entityCount;				// 图元数量
-	//	int entityCapacity;				// 数组容量
-
-	//	// 文档元数据
-	//	char version[32];				// DXF版本
-	//	char encoding[32];				// 编码
-	//	DxfPoint limitsMin;				// 图形界限最小值
-	//	DxfPoint limitsMax;				// 图形界限最大值
-
-	//	// 状态
-	//	int lastError;					// 最后错误代码
-	//	char errorMsg[256];				// 错误信息
-	//} DxfDocument;
-
-
-
-
-		/// <summary>
+	/// <summary>
 	/// 创建DxfDocumentHandle句柄
 	/// </summary>
 	/// <returns></returns>
@@ -277,7 +238,7 @@ extern "C"
 	/// 得到实体总数,
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
-	/// <returns>实体总数</returns>
+	/// <returns>实体总数，-1为失败</returns>
 	dxflib_EXPORTS_API int __stdcall GetEntityCount(DxfDocument_Handle hdxfDocument);
 
 	/// <summary>
@@ -287,7 +248,42 @@ extern "C"
 	/// <param name="index"></param>
 	/// <param name="outWrapper"></param>
 	/// <returns>0成功，-1失败</returns>
-	dxflib_EXPORTS_API int __stdcall GetEntityAt(DxfDocument_Handle hdxfDocument, int index, DxfEntityWrapper* outWrapper);//结构体指针符合POD，VC可以传
+	dxflib_EXPORTS_API int __stdcall GetEntityAt(DxfDocument_Handle hdxfDocument, int index, DxfEntityWrapper* outWrapper);//指针不行
+
+
+	////////////////////////////////////读块大概率作用不大
+
+	/// <summary>
+	/// 得到块的个数
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <returns>个数，-1为失败</returns>
+	dxflib_EXPORTS_API int __stdcall GetBlockCount(DxfDocument_Handle hdxfDocument);
+	/// <summary>
+	/// 得到块索引对应的名称
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <param name="index"></param>
+	/// <returns>0成功，-1失败</returns>
+	dxflib_EXPORTS_API int __stdcall GetBlockAt(DxfDocument_Handle hdxfDocument, int index, char* OutBlockName, int bufferSize);
+	/// <summary>
+	/// 得到块内实体的个数
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <param name="blockName"></param>
+	/// <returns>个数，-1为失败</returns>
+	dxflib_EXPORTS_API int __stdcall GetBlockInEntityCount(DxfDocument_Handle hdxfDocument, const int blockIndex);
+	/// <summary>
+	/// 得到块内对应索引的实体
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <param name="blockName"></param>
+	/// <param name="index"></param>
+	/// <param name="outWrapper"></param>
+	/// <returns>-1失败，0成功</returns>
+	dxflib_EXPORTS_API int __stdcall GetBlockInEntityAt(DxfDocument_Handle hdxfDocument, const int blockIndex, const int entityIndex, DxfEntityWrapper* outWrapper);
+
+
 
 	/// <summary>
 	/// 销毁句柄下读取的全部实体
@@ -319,7 +315,7 @@ extern "C"
 	/// <param name="index"></param>
 	/// <param name="outPoint">数据写入指针内存下（结构体内全为POD数据类型）</param>
 	/// <returns></returns>
-	dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, int index, const DxfPolylineEntity* polylineEntity, DxfPoint* outPoint);
+	dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, const int index, const DxfPolylineEntity* polylineEntity, DxfPoint* outPoint);
 
 	//dxflib_EXPORTS_API void __stdcall usage();
 	//dxflib_EXPORTS_API void __stdcall testReading(char* file);

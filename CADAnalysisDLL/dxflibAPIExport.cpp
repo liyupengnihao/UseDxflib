@@ -189,12 +189,67 @@ dxflib_EXPORTS_API int __stdcall GetEntityCount(DxfDocument_Handle hdxfDocument)
 
 dxflib_EXPORTS_API int __stdcall GetEntityAt(DxfDocument_Handle hdxfDocument, int index, DxfEntityWrapper* outWrapper)
 {
-	if (!hdxfDocument || !outWrapper) return -1;
+	//if (!hdxfDocument || !outWrapper) return -1;
+	if (!hdxfDocument) return -1;
 	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
 	try
 	{
 		//outWrapper = &(pDoc->g_entityList.at(index));//修改的是副本的指向
-		*outWrapper = pDoc->g_entityList.at(index);//修改了指向的内存
+		*outWrapper = pDoc->g_entityList.at(index);
+	}
+	catch (const std::out_of_range& e)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+dxflib_EXPORTS_API int __stdcall GetBlockCount(DxfDocument_Handle hdxfDocument)
+{
+	if (!hdxfDocument) return -1;
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+	//return pDoc->GetEntityCount();
+	return pDoc->g_blockList.size();
+}
+
+dxflib_EXPORTS_API int __stdcall GetBlockAt(DxfDocument_Handle hdxfDocument, int index, char* OutBlockName, int bufferSize)
+{
+	if (!hdxfDocument) return -1;
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	try
+	{
+		//outWrapper = &(pDoc->g_entityList.at(index));//修改的是副本的指向
+		strncpy(OutBlockName, pDoc->g_blockList.at(index).blockName.c_str(), bufferSize);
+	}
+	catch (const std::out_of_range& e)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+dxflib_EXPORTS_API int __stdcall GetBlockInEntityCount(DxfDocument_Handle hdxfDocument, const int blockIndex)
+{
+	if (!hdxfDocument) return -1;
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+	//return pDoc->GetEntityCount();
+	if (blockIndex >= pDoc->g_blockList.size())return -1;
+	return pDoc->g_blockList[blockIndex].g_blockEntityList.size();
+}
+
+dxflib_EXPORTS_API int __stdcall GetBlockInEntityAt(DxfDocument_Handle hdxfDocument, const int blockIndex, const int entityIndex, DxfEntityWrapper* outWrapper)
+{
+	if (!hdxfDocument) return -1;
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	if (blockIndex >= pDoc->g_blockList.size())return -1;
+	if (entityIndex >= pDoc->g_blockList[blockIndex].g_blockEntityList.size())return -1;
+
+	try
+	{
+		*outWrapper = pDoc->g_blockList[blockIndex].g_blockEntityList.at(entityIndex);//修改的是副本的指向
 	}
 	catch (const std::out_of_range& e)
 	{
@@ -216,7 +271,7 @@ dxflib_EXPORTS_API int __stdcall GetVertexCount(DxfDocument_Handle hdxfDocument,
 	//return static_cast<int>(pVec->size());
 }
 
-dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, int index, const DxfPolylineEntity* polylineEntity, DxfPoint* outPoint)
+dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, const int index, const DxfPolylineEntity* polylineEntity, DxfPoint* outPoint)
 {
 	if (!hdxfDocument || !polylineEntity || !outPoint)return -1;
 
@@ -756,8 +811,8 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 	//下方三个块全都要有
 	dxf->writeBlock(*dw, DL_BlockData("*Model_Space", 0, 0.0, 0.0, 0.0));
 	dxf->writeEndBlock(*dw, "*Model_Space");//实体所在图纸空间
-	//dxf->writeBlock(*dw, DL_BlockData("*Paper_Space", 0, 0.0, 0.0, 0.0));
-	//dxf->writeEndBlock(*dw, "*Paper_Space");//布局空间（用来出图打印）
+	dxf->writeBlock(*dw, DL_BlockData("*Paper_Space", 0, 0.0, 0.0, 0.0));
+	dxf->writeEndBlock(*dw, "*Paper_Space");//布局空间（用来出图打印）
 	//dxf->writeBlock(*dw, DL_BlockData("*Paper_Space0", 0, 0.0, 0.0, 0.0));
 	//dxf->writeEndBlock(*dw, "*Paper_Space0");//默认布局
 
