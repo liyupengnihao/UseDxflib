@@ -511,6 +511,44 @@ AcDbBlockEnd
   0
 BLOCK
   5
+1C
+100
+AcDbEntity
+ 67
+1
+  8
+0
+100
+AcDbBlockBegin
+  2
+*Paper_Space
+ 70
+0
+ 10
+0.0
+ 20
+0.0
+ 30
+0.0
+  3
+*Paper_Space
+  1
+
+  0
+ENDBLK
+  5
+1D
+100
+AcDbEntity
+ 67
+1
+  8
+0
+100
+AcDbBlockEnd
+  0
+BLOCK
+  5
 33
 100
 AcDbEntity
@@ -589,9 +627,45 @@ AcDbCircle
  40
 5.0
   0
-ENDBLK
+ELLIPSE
   5
 36
+100
+AcDbEntity
+  8
+0
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbEllipse
+ 10
+10.0
+ 20
+5.0
+ 30
+0.0
+ 11
+10.0
+ 21
+0.0
+ 31
+0.0
+ 40
+0.5
+ 41
+0.0
+ 42
+3.1415926535897931
+  0
+ENDBLK
+  5
+37
 100
 AcDbEntity
   8
@@ -601,7 +675,7 @@ AcDbBlockEnd
   0
 BLOCK
   5
-37
+38
 100
 AcDbEntity
   8
@@ -625,7 +699,7 @@ TestblockTwo
   0
 LWPOLYLINE
   5
-38
+39
 100
 AcDbEntity
   8
@@ -659,7 +733,7 @@ AcDbPolyline
   0
 ENDBLK
   5
-39
+3A
 100
 AcDbEntity
   8
@@ -675,7 +749,7 @@ ENTITIES
   0
 POINT
   5
-3A
+3B
 100
 AcDbEntity
   8
@@ -699,7 +773,7 @@ AcDbPoint
   0
 LINE
   5
-3B
+3C
 100
 AcDbEntity
   8
@@ -729,7 +803,7 @@ AcDbLine
   0
 CIRCLE
   5
-3C
+3D
 100
 AcDbEntity
   8
@@ -755,7 +829,7 @@ AcDbCircle
   0
 ARC
   5
-3D
+3E
 100
 AcDbEntity
   8
@@ -787,7 +861,7 @@ AcDbArc
   0
 TEXT
   5
-3E
+3F
 100
 AcDbEntity
   8
@@ -835,7 +909,7 @@ AcDbText
   0
 LWPOLYLINE
   5
-3F
+40
 100
 AcDbEntity
   8
@@ -851,7 +925,7 @@ BYLAYER
 100
 AcDbPolyline
  90
-5
+3
  70
 1
  10
@@ -866,14 +940,46 @@ AcDbPolyline
 50.0
  20
 100.0
+  0
+ELLIPSE
+  5
+41
+100
+AcDbEntity
+  8
+mainlayer
+ 62
+125
+370
+-1
+ 48
+1.0
+  6
+BYLAYER
+100
+AcDbEllipse
  10
-0.0
+100.0
  20
-30.0
+100.0
+ 30
+0.0
+ 11
+-10.0
+ 21
+25.0
+ 31
+0.0
+ 40
+0.8
+ 41
+0.0
+ 42
+3.1415926535897931
   0
 INSERT
   5
-40
+42
 100
 AcDbEntity
   8
@@ -899,7 +1005,7 @@ TestblockOne
   0
 INSERT
   5
-41
+43
 100
 AcDbEntity
   8
@@ -925,7 +1031,7 @@ TestblockOne
   0
 INSERT
   5
-42
+44
 100
 AcDbEntity
   8
@@ -987,7 +1093,7 @@ E
   3
 AcDbVariableDictionary
 350
-43
+45
   0
 DICTIONARY
   5
@@ -1451,7 +1557,7 @@ Layout2
   0
 DICTIONARY
   5
-43
+45
 100
 AcDbDictionary
 281
@@ -1459,15 +1565,15 @@ AcDbDictionary
   3
 DIMASSOC
 350
-45
+47
   3
 HIDETEXT
 350
-44
+46
   0
 DICTIONARYVAR
   5
-44
+46
 100
 DictionaryVariables
 280
@@ -1477,7 +1583,7 @@ DictionaryVariables
   0
 DICTIONARYVAR
   5
-45
+47
 100
 DictionaryVariables
 280

@@ -17,7 +17,8 @@ int main() {
 	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileFour.dxf");
 
     //ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/demo.dxf");
-    ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
+    //ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
+    ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newsix.dxf");
     //ReadDXF(hdxfDocument, "C:/Users/Public/Nwt/cache/recv/程佳佳/8985FDB-FD-007-00.DXF");
 
 
@@ -72,7 +73,7 @@ int main() {
 
     //多段线
     poly.type = DxfEntityType::DXF_ENTITY_POLYLINE;
-    poly.data.polyline.vertexCount = 5;
+    poly.data.polyline.vertexCount = 3;
     poly.data.polyline.pFlags = 1;
 
     int inIndex = WriteSingleEntity(hdxfDocument, &poly);
@@ -95,7 +96,17 @@ int main() {
         WriteSinglePolylinePeakEntity(hdxfDocument, inIndex, &pt);
     }
 
-    //块引用
+    //椭圆
+    poly.type = DxfEntityType::DXF_ENTITY_ELLIPSE;
+    poly.data.ellipse.EllipseCenter = { 100,100,0 };
+    poly.data.ellipse.LongAxisVectorQuantity = { -10,25,0 };
+    poly.data.ellipse.ShortRatioLong = 0.8;
+    poly.data.ellipse.StartAngle = 0;
+    poly.data.ellipse.EndAngle = std::acos(-1.0)*1;
+    WriteSingleEntity(hdxfDocument, &poly);
+
+
+#pragma region 实体块引用
     tempString = "TestblockOne";
     poly.type = DxfEntityType::DXF_ENTITY_INSERT;
     strncpy_s(
@@ -141,6 +152,7 @@ int main() {
     poly.data.insert.scaleZ = 1.0;
     poly.data.insert.rotation = 0;
     WriteSingleEntity(hdxfDocument, &poly);
+#pragma endregion
 
 #pragma region  写入块
     poly.type = DxfEntityType::DXF_ENTITY_LINE;
@@ -164,7 +176,19 @@ int main() {
         &alignPoint,
         &poly
     );
-
+    //块内椭圆
+    poly.type = DxfEntityType::DXF_ENTITY_ELLIPSE;
+    poly.data.ellipse.EllipseCenter = { 10,5,0 };
+    poly.data.ellipse.LongAxisVectorQuantity = { 10,0,0 };
+    poly.data.ellipse.ShortRatioLong = 0.5;
+    poly.data.ellipse.StartAngle = 0;
+    poly.data.ellipse.EndAngle = std::acos(-1.0);
+    WriteSingleBlock(
+        hdxfDocument,
+        "TestblockOne",
+        &alignPoint,
+        &poly
+    );
 
 #pragma region  新块，内为多段线
     poly.type = DxfEntityType::DXF_ENTITY_POLYLINE;

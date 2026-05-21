@@ -89,6 +89,13 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 					std::cout << "块内发现块引用:引用名称" << insertEntity.blockName << "插入点：(" << insertEntity.position.x << "," << insertEntity.position.y << "," << insertEntity.position.z <<
 						")X轴缩放" << insertEntity.scaleX << "Y轴缩放" << insertEntity.scaleY << "Z轴缩放" << insertEntity.scaleZ << std::endl;
 				}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_ELLIPSE)
+				{
+					DxfEllipseEntity ellipseEntity = entity.data.ellipse;
+					std::cout<<"块内发现椭圆:中心点("<< ellipseEntity.EllipseCenter.x << "," << ellipseEntity.EllipseCenter.y << "," << ellipseEntity.EllipseCenter.z <<
+						")LongAxisVectorQuantity(" << ellipseEntity.LongAxisVectorQuantity.x << "," << ellipseEntity.LongAxisVectorQuantity.y << "," << ellipseEntity.LongAxisVectorQuantity.z <<
+						")ShortAxis/LongAxis:" << ellipseEntity.ShortRatioLong << "StartAngle" << ellipseEntity.StartAngle << "EndAngle" << ellipseEntity.EndAngle << std::endl;
+				}
 				//else if (entity.entityType == DxfEntity::Type::SPLINE)//未实现
 				//{
 				//	std::cout << "发现样条曲线" << std::endl;
@@ -144,6 +151,13 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 				DxfInsertEntity insertEntity = entity.data.insert;
 				std::cout << "发现块引用:引用名称" << insertEntity.blockName << "插入点：(" << insertEntity.position.x << "," << insertEntity.position.y << "," << insertEntity.position.z <<
 					")X轴缩放" << insertEntity.scaleX << "Y轴缩放" << insertEntity.scaleY << "Z轴缩放" << insertEntity.scaleZ << std::endl;
+			}
+			else if (entity.type == DxfEntityType::DXF_ENTITY_ELLIPSE)
+			{
+				DxfEllipseEntity ellipseEntity = entity.data.ellipse;
+				std::cout << "发现椭圆:中心点(" << ellipseEntity.EllipseCenter.x << "," << ellipseEntity.EllipseCenter.y << "," << ellipseEntity.EllipseCenter.z <<
+					")LongAxisVectorQuantity(" << ellipseEntity.LongAxisVectorQuantity.x << "," << ellipseEntity.LongAxisVectorQuantity.y << "," << ellipseEntity.LongAxisVectorQuantity.z <<
+					")ShortAxis/LongAxis:" << ellipseEntity.ShortRatioLong << "StartAngle" << ellipseEntity.StartAngle << "EndAngle" << ellipseEntity.EndAngle << std::endl;
 			}
 			//else if (entity.entityType == DxfEntity::Type::SPLINE)//未实现
 			//{
@@ -262,21 +276,18 @@ dxflib_EXPORTS_API int __stdcall GetVertexCount(DxfDocument_Handle hdxfDocument,
 {
 	if (!hdxfDocument || !polylineEntity)return -1;
 
-	const PointList* pVec = dxflibCreationClass::Get(polylineEntity->_vertexHandle);
+	const PolylinePointList* pVec = dxflibCreationClass::GetPolylineList(polylineEntity->_vertexHandle);
 	if (!pVec)
 		return 0;
 
 	return static_cast<int>(pVec->size());
-	//const PointList* pVec = reinterpret_cast<const PointList*>(polylineEntity->_vertexHandle);
-	//return static_cast<int>(pVec->size());
 }
 
 dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, const int index, const DxfPolylineEntity* polylineEntity, DxfPoint* outPoint)
 {
 	if (!hdxfDocument || !polylineEntity || !outPoint)return -1;
 
-	const PointList* pVec = dxflibCreationClass::Get(polylineEntity->_vertexHandle);
-	//const PointList* pVec = reinterpret_cast<const PointList*>(polylineEntity->_vertexHandle);
+	const PolylinePointList* pVec = dxflibCreationClass::GetPolylineList(polylineEntity->_vertexHandle);
 
 #ifdef _DEBUG
 	// 加日志，打印指针值
@@ -311,20 +322,28 @@ dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocu
 		// 只有多段线 Polyline 有动态句柄，需要释放
 		if (wrapper.type == DXF_ENTITY_POLYLINE)
 		{
-			//// 取出句柄指针
-			//PointList* pPoints = (PointList*)wrapper.data.polyline._vertexHandle;
-
-			//// 释放！
-			//if (pPoints != nullptr)
-			//{
-			//	delete pPoints;
-			//	wrapper.data.polyline._vertexHandle = nullptr; // 置空，安全
-			//}
-
 			if (wrapper.data.polyline._vertexHandle != 0)
 			{
-				dxflibCreationClass::Destroy(wrapper.data.polyline._vertexHandle);
+				dxflibCreationClass::DestroyPolylineList(wrapper.data.polyline._vertexHandle);
 				wrapper.data.polyline._vertexHandle = 0;
+			}
+		}
+		else if (wrapper.type == DXF_ENTITY_SPLINE)
+		{
+			if (wrapper.data.spline._controlPointsHandle != 0)
+			{
+				dxflibCreationClass::DestroySplineControlPointList(wrapper.data.spline._controlPointsHandle);
+				wrapper.data.spline._controlPointsHandle = 0;
+			}
+			if (wrapper.data.spline._fitPointHandle != 0)
+			{
+				dxflibCreationClass::DestroySplineFitPointList(wrapper.data.spline._fitPointHandle);
+				wrapper.data.spline._fitPointHandle = 0;
+			}
+			if (wrapper.data.spline._knotsHandle != 0)
+			{
+				dxflibCreationClass::DestroySplineKnotList(wrapper.data.spline._knotsHandle);
+				wrapper.data.spline._knotsHandle = 0;
 			}
 		}
 	}
@@ -334,6 +353,8 @@ dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocu
 
 	// 可选：强制释放 vector 预留的内存
 	pDoc->g_entityList.shrink_to_fit();
+
+	return 0;
 }
 
 dxflib_EXPORTS_API int __stdcall DeleteAllReadBlock(DxfDocument_Handle hdxfDocument)
@@ -350,56 +371,37 @@ dxflib_EXPORTS_API int __stdcall DeleteAllReadBlock(DxfDocument_Handle hdxfDocum
 		{
 			if (entity.type == DXF_ENTITY_POLYLINE)
 			{
-				//PointList* pPoints = (PointList*)entity.data.polyline._vertexHandle;
-				//if (pPoints != nullptr)
-				//{
-				//	delete pPoints;
-				//	entity.data.polyline._vertexHandle = nullptr;
-				//}
-
 				if (entity.data.polyline._vertexHandle != 0)
 				{
-					dxflibCreationClass::Destroy(entity.data.polyline._vertexHandle);
+					dxflibCreationClass::DestroyPolylineList(entity.data.polyline._vertexHandle);
 					entity.data.polyline._vertexHandle = 0;
+				}
+			}
+			else if (entity.type == DXF_ENTITY_SPLINE)
+			{
+				if (entity.data.spline._controlPointsHandle != 0)
+				{
+					dxflibCreationClass::DestroySplineControlPointList(entity.data.spline._controlPointsHandle);
+					entity.data.spline._controlPointsHandle = 0;
+				}
+				if (entity.data.spline._fitPointHandle != 0)
+				{
+					dxflibCreationClass::DestroySplineFitPointList(entity.data.spline._fitPointHandle);
+					entity.data.spline._fitPointHandle = 0;
+				}
+				if (entity.data.spline._knotsHandle != 0)
+				{
+					dxflibCreationClass::DestroySplineKnotList(entity.data.spline._knotsHandle);
+					entity.data.spline._knotsHandle = 0;
 				}
 			}
 		}
 	}
 	pDoc->g_blockList.clear();
 	pDoc->g_blockList.shrink_to_fit();
-}
 
-//dxflib_EXPORTS_API int __stdcall WriteSingleEntity(DxfDocument_Handle hdxfDocument, DxfEntityWrapper addEntity)
-//{
-//	//if (!hdxfDocument || !addEntity)return -1;
-//	//dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
-//	//if (addEntity.type == DXF_ENTITY_POLYLINE)
-//	//{
-//	//	DxfPolylineEntity& srcPoly = addEntity.data.polyline;
-//	//	int count = srcPoly.vertexCount;
-//
-//	//	// 1. 从 VC++6.0 传进来的句柄读取数据
-//	//	DxfPoint* pInPoints = (DxfPoint*)srcPoly._vertexHandle;//VC怎么向句柄指向写数据
-//
-//	//	if (pInPoints != NULL && count > 0)
-//	//	{
-//	//		// 2. ================= 关键 =================
-//	//		// VS2022 自己 NEW 一份新内存（自己的堆）
-//	//		DxfPoint* pNewPoints = new DxfPoint[count];
-//
-//	//		// 复制数据
-//	//		memcpy(pNewPoints, pInPoints, sizeof(DxfPoint) * count);
-//
-//	//		// 3. 替换成 VS2022 自己的指针
-//	//		addEntity.data.polyline._vertexHandle = (DxfDataBuffer_Handle)pNewPoints;
-//	//	}
-//	//}
-//
-//	//// 4. 把【复制好、VS2022 拥有的】实体存入 vector
-//	//pDoc->g_entityList.push_back(addEntity);
-//
-//	return 0;
-//}
+	return 0;
+}
 
 dxflib_EXPORTS_API int __stdcall WriteSingleEntity(
 	DxfDocument_Handle hdxfDocument,
@@ -419,18 +421,9 @@ dxflib_EXPORTS_API int __stdcall WriteSingleEntity(
 
 	if (localEntity.type == DXF_ENTITY_POLYLINE)
 	{
-		//// 多段线特殊处理：创建 vector
-		//std::vector<DxfPoint>* pPoints = new std::vector<DxfPoint>();
-		//if (localEntity.data.polyline.vertexCount > 0) {
-		//	pPoints->reserve(localEntity.data.polyline.vertexCount);
-		//}
-
-		//// 绑定句柄（存入内部实体）
-		//localEntity.data.polyline._vertexHandle = static_cast<DxfDataBuffer_Handle>(pPoints);
-
 		std::vector<DxfPoint> points;
 		points.reserve(localEntity.data.polyline.vertexCount);
-		int handle = dxflibCreationClass::Create(points);
+		int handle = dxflibCreationClass::CreatePolylineList(points);
 
 		localEntity.data.polyline._vertexHandle = handle;
 	}
@@ -472,21 +465,12 @@ dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakEntity(
 	if (targetEntity.type != DXF_ENTITY_POLYLINE) return -1;
 	// 还原句柄并添加数据
 	// 从内部实体中取出 _vertexHandle
-	DxfDataBuffer_Handle hVertices = targetEntity.data.polyline._vertexHandle;
-
-	//if (hVertices) {
-	//	//typedef std::vector<DxfPoint> PointVec;
-	//	PointList* pVec = reinterpret_cast<PointList*>(hVertices);
-	//	if (pVec->size() >= targetEntity.data.polyline.vertexCount)return -1;
-	//	//DxfPoint tempPoint = { pPoint->x,pPoint->y,pPoint->z };
-	//	//pVec->push_back(tempPoint);
-	//	pVec->push_back(*pPoint);//将备份送入数组
-	//}
+	DxfPolylineVertexBuffer_Handle hVertices = targetEntity.data.polyline._vertexHandle;
 
 	if (hVertices == 0)
 		return -1;
 
-	PointList* pVec = dxflibCreationClass::Get(hVertices);
+	PolylinePointList* pVec = dxflibCreationClass::GetPolylineList(hVertices);
 	if (!pVec)
 		return -1;
 
@@ -520,19 +504,10 @@ dxflib_EXPORTS_API int __stdcall WriteSingleBlock(
 
 			if (localEntity.type == DXF_ENTITY_POLYLINE)
 			{
-				//// 多段线特殊处理：创建 vector
-				//std::vector<DxfPoint>* pPoints = new std::vector<DxfPoint>();
-				//if (localEntity.data.polyline.vertexCount > 0) {
-				//	pPoints->reserve(localEntity.data.polyline.vertexCount);
-				//}
-
-				//// 绑定句柄（存入内部实体）
-				//localEntity.data.polyline._vertexHandle = static_cast<DxfDataBuffer_Handle>(pPoints);
-
 				std::vector<DxfPoint>points;
 				points.reserve(localEntity.data.polyline.vertexCount);
 
-				int handle = dxflibCreationClass::Create(points);
+				int handle = dxflibCreationClass::CreatePolylineList(points);
 
 				localEntity.data.polyline._vertexHandle = handle;
 			}
@@ -556,19 +531,10 @@ dxflib_EXPORTS_API int __stdcall WriteSingleBlock(
 
 		if (localEntity.type == DXF_ENTITY_POLYLINE)
 		{
-			//// 多段线特殊处理：创建 vector
-			//std::vector<DxfPoint>* pPoints = new std::vector<DxfPoint>();
-			//if (localEntity.data.polyline.vertexCount > 0) {
-			//	pPoints->reserve(localEntity.data.polyline.vertexCount);
-			//}
-
-			//// 绑定句柄（存入内部实体）
-			//localEntity.data.polyline._vertexHandle = static_cast<DxfDataBuffer_Handle>(pPoints);
-
 			std::vector<DxfPoint>points;
 			points.reserve(localEntity.data.polyline.vertexCount);
 
-			int handle = dxflibCreationClass::Create(points);
+			int handle = dxflibCreationClass::CreatePolylineList(points);
 
 			localEntity.data.polyline._vertexHandle = handle;
 		}
@@ -605,21 +571,12 @@ dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakBlock(
 			//确定实体是多段线
 			if (targetEntity.type != DXF_ENTITY_POLYLINE) return -1;
 
-			DxfDataBuffer_Handle hVertices = targetEntity.data.polyline._vertexHandle;
-
-			//if (hVertices) {
-			//	//typedef std::vector<DxfPoint> PointVec;
-			//	PointList* pVec = reinterpret_cast<PointList*>(hVertices);
-			//	if (pVec->size() >= targetEntity.data.polyline.vertexCount)return -1;
-			//	//DxfPoint tempPoint = { pPoint->x,pPoint->y,pPoint->z };
-			//	//pVec->push_back(tempPoint);
-			//	pVec->push_back(*pPoint);//将备份送入数组
-			//}
+			DxfPolylineVertexBuffer_Handle hVertices = targetEntity.data.polyline._vertexHandle;
 
 			if (hVertices == 0)
 				return -1;
 
-			PointList* pVec = dxflibCreationClass::Get(hVertices);
+			PolylinePointList* pVec = dxflibCreationClass::GetPolylineList(hVertices);
 			if (!pVec)
 				return -1;
 
@@ -630,6 +587,7 @@ dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakBlock(
 			return 0;
 		}
 	}
+	return -1;
 }
 
 
@@ -649,19 +607,9 @@ dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxf
 		// 只有多段线 Polyline 有动态句柄，需要释放
 		if (wrapper.type == DXF_ENTITY_POLYLINE)
 		{
-			//// 取出句柄指针
-			//PointList* pPoints = (PointList*)wrapper.data.polyline._vertexHandle;
-
-			//// 释放！
-			//if (pPoints != nullptr)
-			//{
-			//	delete pPoints;
-			//	wrapper.data.polyline._vertexHandle = nullptr; // 置空，安全
-			//}
-
 			if (wrapper.data.polyline._vertexHandle != 0)
 			{
-				dxflibCreationClass::Destroy(wrapper.data.polyline._vertexHandle);
+				dxflibCreationClass::DestroyPolylineList(wrapper.data.polyline._vertexHandle);
 				wrapper.data.polyline._vertexHandle = 0;
 			}
 		}
@@ -687,25 +635,16 @@ dxflib_EXPORTS_API int __stdcall DeleteWriteVectorBlock(DxfDocument_Handle hdxfD
 	{//块下实体下的多端线句柄释放
 		for (auto& entity : block.g_blockEntityList)
 		{
-			//if (entity.type == DXF_ENTITY_POLYLINE)
-			//{
-			//	PointList* pPoints = (PointList*)entity.data.polyline._vertexHandle;
-			//	if (pPoints != nullptr)
-			//	{
-			//		delete pPoints;
-			//		entity.data.polyline._vertexHandle = nullptr;
-			//	}
-			//}
-
 			if (entity.data.polyline._vertexHandle != 0)
 			{
-				dxflibCreationClass::Destroy(entity.data.polyline._vertexHandle);
+				dxflibCreationClass::DestroyPolylineList(entity.data.polyline._vertexHandle);
 				entity.data.polyline._vertexHandle = 0;
 			}
 		}
 	}
 	pDoc->g_writeBlockList.clear();
 	pDoc->g_writeBlockList.shrink_to_fit();
+	return 0;
 }
 
 dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const char* path)
@@ -928,20 +867,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 				//if (tempEntity._vertexHandle == nullptr)continue;
 				if (tempEntity._vertexHandle == 0)continue;
 
-				//for (const auto& vertex : *(PointList*)(tempEntity._vertexHandle))//遍历左边是对象
-				//{
-				//	dxf->writeVertex(
-				//		*dw,
-				//		DL_VertexData(
-				//			vertex.x,
-				//			vertex.y,
-				//			vertex.z,
-				//			0//顶点与顶点之间的弧度，0就是直线。大于0凸圆弧，小于0凹圆弧，值=tan(圆弧圆心角/4)
-				//		)
-				//	);
-				//}
-
-				PointList* pVec = dxflibCreationClass::Get(tempEntity._vertexHandle);
+				PolylinePointList* pVec = dxflibCreationClass::GetPolylineList(tempEntity._vertexHandle);
 				if (!pVec || pVec->empty())
 					continue;
 
@@ -985,6 +911,25 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 			}
 			break;
 
+			case DxfEntityType::DXF_ENTITY_ELLIPSE:
+			{
+				DxfEllipseEntity tempEntity = entity.data.ellipse;
+				dxf->writeEllipse(
+					*dw,
+					DL_EllipseData(
+						tempEntity.EllipseCenter.x,
+						tempEntity.EllipseCenter.y,
+						tempEntity.EllipseCenter.z,
+						tempEntity.LongAxisVectorQuantity.x,
+						tempEntity.LongAxisVectorQuantity.y,
+						tempEntity.LongAxisVectorQuantity.z,
+						tempEntity.ShortRatioLong,
+						tempEntity.StartAngle,
+						tempEntity.EndAngle
+					),
+					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
+			}
+			break;
 			default:
 				break;
 			}
@@ -1105,20 +1050,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 			//if (tempEntity._vertexHandle == nullptr)continue;
 			if (tempEntity._vertexHandle == 0)continue;
 
-
-			//for (const auto& vertex : *(PointList*)(tempEntity._vertexHandle))//遍历左边是对象
-			//{
-			//	dxf->writeVertex(
-			//		*dw,
-			//		DL_VertexData(
-			//			vertex.x,
-			//			vertex.y,
-			//			vertex.z,
-			//			0//顶点与顶点之间的弧度，0就是直线。大于0凸圆弧，小于0凹圆弧，值=tan(圆弧圆心角/4)
-			//		)
-			//	);
-			//}
-			PointList* pVec = dxflibCreationClass::Get(tempEntity._vertexHandle);
+			PolylinePointList* pVec = dxflibCreationClass::GetPolylineList(tempEntity._vertexHandle);
 			if (!pVec || pVec->empty())continue;
 
 			for (const auto& vertex : *pVec)
@@ -1161,6 +1093,25 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 		}
 		break;
 
+		case DxfEntityType::DXF_ENTITY_ELLIPSE:
+		{
+			DxfEllipseEntity tempEntity = pDoc->g_writeEntityList[i].data.ellipse;
+			dxf->writeEllipse(
+				*dw,
+				DL_EllipseData(
+					tempEntity.EllipseCenter.x,
+					tempEntity.EllipseCenter.y,
+					tempEntity.EllipseCenter.z,
+					tempEntity.LongAxisVectorQuantity.x,
+					tempEntity.LongAxisVectorQuantity.y,
+					tempEntity.LongAxisVectorQuantity.z,
+					tempEntity.ShortRatioLong,
+					tempEntity.StartAngle,
+					tempEntity.EndAngle
+				),
+				DL_Attributes("mainlayer", 125, -1, "BYLAYER", 1.0));
+		}
+		break;
 		default:
 			break;
 		}

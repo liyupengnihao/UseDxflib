@@ -8,7 +8,7 @@
 #endif
 
 
-//当前头文件用于导出
+//当前头文件用于导出给VC++6.0或C#使用
 #ifdef __cplusplus
 extern "C"
 {
@@ -16,9 +16,11 @@ extern "C"
 	//多段线和实体个数要是可变大小，VC++6.0与VS2026ABI(二进制接口)不一样，无法使用各自容器
 
 	typedef void* DxfDocument_Handle;       // 文档句柄（替代 类dxflibCreationClass）
-	//typedef void* DxfDataBuffer_Handle;     // 多段线内每个顶点的数据（替代 DxfPoint* 数组指针）,对应类型typedef std::vector<DxfPoint> PointList;
-	typedef int DxfDataBuffer_Handle;     // 多段线内每个顶点的数据（替代 DxfPoint* 数组指针）,对应类型typedef std::vector<DxfPoint> PointList;
+	typedef int DxfPolylineVertexBuffer_Handle;     // 多段线内每个顶点的数据（替代 DxfPoint* 数组指针）,对应类型typedef std::vector<DxfPoint> PolylinePointList;
 
+	typedef int DxfSplineControlPoint_Handle;	//样条线控制点
+	typedef int DxfSplineFitPoint_Handle;		//样条线拟合点
+	typedef int DxfSplineKnot_Handle;			//样条线节点向量
 	/// <summary>
 	/// 记录bool
 	/// </summary>
@@ -52,6 +54,25 @@ extern "C"
 		DxfColorType type;//颜色类型
 		int index;//类型0，对应256，类型1对应0，类型2对应1到255
 	}DxfColor;
+	/// <summary>
+	/// 样条曲线单个控制点
+	/// </summary>
+	typedef struct SplineControlPoint {
+		DxfPoint controlPoint;
+		double weight;//权重默认=1，weight>1:更靠近控制点，0<weight<1:曲线远离控制点，weight=0此点几乎不起作用
+	}SplineControlPoint;
+	/// <summary>
+	/// 样条曲线单个拟合点
+	/// </summary>
+	typedef struct SplineFitPoint {
+		DxfPoint fitPoint;
+	}SplineFitPoint;
+	/// <summary>
+	/// 样条曲线单个节点向量，值为控制点数量+阶数+1（读与写都是如此计算）
+	/// </summary>
+	typedef struct SplineKnot {
+		double knot;
+	}SplineKnot;
 
 	/// <summary>
 	/// 对应内部DxfEntityAttributes
@@ -127,12 +148,14 @@ extern "C"
 		double height;          // 字高
 		double rotation;        // 旋转角度
 	} DxfTextEntity;
-
+	/// <summary>
+	/// 传统多段线，写入时顶点个数无效
+	/// </summary>
 	typedef struct DxfPolylineEntity {
 		//DxfEntityAttr attr;
 		int vertexCount;           // 顶点数量
 		int pFlags;          // 多段线类型，0普通，1闭合，4曲线拟合，16 3D多段线，32 3D多边型网格，64 多边形网格闭合（N反向），128 多面体网格
-		DxfDataBuffer_Handle _vertexHandle; // 替代了 DxfPoint* vertices，动态个数
+		DxfPolylineVertexBuffer_Handle _vertexHandle; // 替代了 DxfPoint* vertices，动态个数
 	} DxfPolylineEntity;
 
 	/// <summary>
@@ -149,33 +172,25 @@ extern "C"
 		double rotation;        // 旋转角度
 	} DxfInsertEntity;
 
-	/// <summary>
-	/// 对应内部Spline
-	/// 样条曲线(实体)(未实现)
-	/// </summary>
-	//typedef struct DxfSplineEntity {
-	//	DxfEntityAttr attr;     // 公共属性
-	//	int degree;             // 阶数
+	typedef struct DxfSplineEntity {
+		//DxfEntityAttr attr;
+		int degree;					// 阶数,常见三阶有理2次样条
+		int ccontrolCount;			// 控制点数量，控制点与拟合点通常不同时存在，大多是控制点
+		int fitCount;				// 拟合点数，控制点与拟合点通常不同时存在,大多是控制点
+		int knotCount;				// 节点数量
+		int flags;					// 标志	1闭合样条曲线、2周期性样条曲线、4有理样条曲线、8平面、16线性（同时还设置平面位）
+		DxfSplineControlPoint_Handle	_controlPointsHandle;	// 控制点
+		DxfSplineFitPoint_Handle		_fitPointHandle;		//拟合点
+		DxfSplineKnot_Handle			_knotsHandle;			//向量节点
+	} DxfSplineEntity;
 
-	//	// 控制点数组（动态分配）
-	//	DxfPoint* controlPoints;    // 控制点指针
-	//	int cpCount;                // 控制点数量
-	//	int cpCapacity;             // 数组容量
-
-	//	// 节点向量数组（动态分配）
-	//	double* knots;              // 节点向量指针
-	//	int knotCount;              // 节点数量
-	//	int knotCapacity;           // 数组容量
-	//} DxfSplineEntity;
-
-	//typedef struct DxfSplineEntity {
-	//	//DxfEntityAttr attr;
-	//	int degree;                // 阶数
-	//	int cpCount;               // 控制点数量
-	//	int knotCount;             // 节点数量
-	//	DxfDataBufferHandle _controlPointsHandle; // 【修改】替代了 DxfPoint* controlPoints
-	//	DxfDataBufferHandle _knotsHandle;         // 【修改】替代了 double* knots
-	//} DxfSplineEntity;
+	typedef struct DxfEllipseEntity {
+		DxfPoint EllipseCenter;					//椭圆圆心
+		DxfPoint LongAxisVectorQuantity;		//圆心到长轴向量
+		double ShortRatioLong;					//短轴比长轴
+		double StartAngle;						//开始角度
+		double EndAngle;						//结束角度
+	}DxfEllipseEntity;
 
 	/// <summary>
 	/// 对应内部枚举DxfEntity:Type
@@ -189,6 +204,7 @@ extern "C"
 		DXF_ENTITY_POLYLINE = 5,   // 多段线
 		DXF_ENTITY_INSERT = 6,   // 块引用
 		DXF_ENTITY_SPLINE = 7,   // 样条曲线(暂未实现)
+		DXF_ENTITY_ELLIPSE = 8,	//椭圆
 		DXF_ENTITY_UNKNOWN = 255  // 未知类型
 	} DxfEntityType;
 
@@ -209,7 +225,8 @@ extern "C"
 			DxfTextEntity			text;
 			DxfPolylineEntity		polyline;
 			DxfInsertEntity			insert;
-			/*DxfSplineEntity			spline;*/
+			DxfSplineEntity			spline;
+			DxfEllipseEntity		ellipse;
 		} data;
 	} DxfEntityWrapper;
 
