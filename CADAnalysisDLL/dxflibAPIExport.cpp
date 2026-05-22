@@ -96,10 +96,32 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 						")LongAxisVectorQuantity(" << ellipseEntity.LongAxisVectorQuantity.x << "," << ellipseEntity.LongAxisVectorQuantity.y << "," << ellipseEntity.LongAxisVectorQuantity.z <<
 						")ShortAxis/LongAxis:" << ellipseEntity.ShortRatioLong << "StartAngle" << ellipseEntity.StartAngle << "EndAngle" << ellipseEntity.EndAngle << std::endl;
 				}
-				//else if (entity.entityType == DxfEntity::Type::SPLINE)//未实现
-				//{
-				//	std::cout << "发现样条曲线" << std::endl;
-				//}
+				else if (entity.type == DxfEntityType::DXF_ENTITY_SPLINE)
+				{
+					DxfSplineEntity splineEntity = entity.data.spline;
+					std::cout << "发现样条曲线:阶数:" << splineEntity.degree<<"控制点数量："<<splineEntity.ccontrolCount<<"拟合点数量："<<splineEntity.fitCount<<"节点数量:"<<splineEntity.knotCount<<"曲线标志:"<<splineEntity.flags<< std::endl;
+					int i = 0;
+					for (const auto& controlPointVector : *dxflibCreationClass::GetSplineControlPointList(splineEntity._controlPointsHandle))//GetSplineControlPointList返回的是指针，遍历要的是对象
+					{//常量引用，开销臂auto复制更小
+						std::cout << "控制点" << ++i << ":位置(" << controlPointVector.controlPoint.x << "," << controlPointVector.controlPoint.y << "," << controlPointVector.controlPoint.z << ")权重" << controlPointVector.weight << std::endl;
+					}
+					i = 0;
+					for (const auto& fitPointVector : *dxflibCreationClass::GetSplineFitPointList(splineEntity._fitPointHandle))
+					{
+						std::cout << "拟合点" << ++i << ":位置(" << fitPointVector.fitPoint.x << "," << fitPointVector.fitPoint.y << "," << fitPointVector.fitPoint.z << ")" << std::endl;
+					}
+					i = 0;
+
+					vector<SplineKnot>* pFitPointList = (vector<SplineKnot>*)dxflibCreationClass::GetSplineKnotList(splineEntity._knotsHandle);
+					for (std::vector<SplineKnot>::iterator it = pFitPointList->begin();it != pFitPointList->end();++it)
+					{
+						std::cout << "节点向量" << ++i << ":" << it->knot << std::endl;
+					}
+					/*for (const auto& knotVector : *dxflibCreationClass::GetSplineKnotList(splineEntity._knotsHandle))
+					{
+						std::cout << "节点向量" << ++i << ":" << knotVector.knot << std::endl;
+					}*/
+				}
 			}
 		}
 
@@ -159,10 +181,32 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 					")LongAxisVectorQuantity(" << ellipseEntity.LongAxisVectorQuantity.x << "," << ellipseEntity.LongAxisVectorQuantity.y << "," << ellipseEntity.LongAxisVectorQuantity.z <<
 					")ShortAxis/LongAxis:" << ellipseEntity.ShortRatioLong << "StartAngle" << ellipseEntity.StartAngle << "EndAngle" << ellipseEntity.EndAngle << std::endl;
 			}
-			//else if (entity.entityType == DxfEntity::Type::SPLINE)//未实现
-			//{
-			//	std::cout << "发现样条曲线" << std::endl;
-			//}
+			else if (entity.type == DxfEntityType::DXF_ENTITY_SPLINE)
+			{
+				DxfSplineEntity splineEntity = entity.data.spline;
+				std::cout << "发现样条曲线:阶数:" << splineEntity.degree << "控制点数量：" << splineEntity.ccontrolCount << "拟合点数量：" << splineEntity.fitCount << "节点数量:" << splineEntity.knotCount << "曲线标志:" << splineEntity.flags << std::endl;
+				int i = 0;
+				for (const auto& controlPointVector : *dxflibCreationClass::GetSplineControlPointList(splineEntity._controlPointsHandle))//GetSplineControlPointList返回的是指针，遍历要的是对象
+				{//常量引用，开销臂auto复制更小
+					std::cout << "控制点" << ++i << ":位置(" << controlPointVector.controlPoint.x << "," << controlPointVector.controlPoint.y << "," << controlPointVector.controlPoint.z << ")权重" << controlPointVector.weight << std::endl;
+				}
+				i = 0;
+				for (const auto& fitPointVector : *dxflibCreationClass::GetSplineFitPointList(splineEntity._fitPointHandle))
+				{
+					std::cout << "拟合点" << ++i << ":位置(" << fitPointVector.fitPoint.x << "," << fitPointVector.fitPoint.y << "," << fitPointVector.fitPoint.z << ")" << std::endl;
+				}
+				i = 0;
+
+				vector<SplineKnot>* pFitPointList = (vector<SplineKnot>*)dxflibCreationClass::GetSplineKnotList(splineEntity._knotsHandle);
+				for (std::vector<SplineKnot>::iterator it = pFitPointList->begin();it != pFitPointList->end();++it)
+				{
+					std::cout << "节点向量" << ++i << ":" << it->knot << std::endl;
+				}
+				//for (const auto& knotVector : *dxflibCreationClass::GetSplineKnotList(splineEntity._knotsHandle))
+				//{
+				//	std::cout << "节点向量" << ++i << ":" << knotVector.knot << std::endl;
+				//}
+			}
 		}
 	}
 	else {
@@ -307,6 +351,57 @@ dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, co
 	return 0;
 }
 
+dxflib_EXPORTS_API int __stdcall GetSplineControlPointCount(DxfDocument_Handle hdxfDocument, const DxfSplineEntity* splineEntity)
+{
+	if (!hdxfDocument || !splineEntity)return -1;
+	const SplineControlPointList* pSCP = dxflibCreationClass::GetSplineControlPointList(splineEntity->_controlPointsHandle);
+	return static_cast<int>(pSCP->size());
+}
+
+dxflib_EXPORTS_API int __stdcall GetSplineControlPointAt(DxfDocument_Handle hdxfDocument, const int index, const DxfSplineEntity* splineEntity, SplineControlPoint* outControlPoint)
+{
+	if (!hdxfDocument || !splineEntity || !outControlPoint)return -1;
+	const SplineControlPointList* pSCP = dxflibCreationClass::GetSplineControlPointList(splineEntity->_controlPointsHandle);
+	try
+	{
+		*outControlPoint = pSCP->at(index);
+	}
+	catch (const std::out_of_range& e)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+dxflib_EXPORTS_API int __stdcall GetSplineFitPointCount(DxfDocument_Handle hdxfDocument, const DxfSplineEntity* splineEntity)
+{
+	if (!hdxfDocument || !splineEntity)return -1;
+	const SplineFitPointList* pSFP = dxflibCreationClass::GetSplineFitPointList(splineEntity->_fitPointHandle);
+	return static_cast<int>(pSFP->size());
+}
+
+dxflib_EXPORTS_API int __stdcall GetSplineFitPointAt(DxfDocument_Handle hdxfDocument, const int index, const DxfSplineEntity* splineEntity, SplineFitPoint* outFitPoint)
+{
+	if (!hdxfDocument || !splineEntity || !outFitPoint)return -1;
+	const SplineFitPointList* pSFP = dxflibCreationClass::GetSplineFitPointList(splineEntity->_fitPointHandle);
+	try
+	{
+		*outFitPoint = pSFP->at(index);
+	}
+	catch (const std::out_of_range& e)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+dxflib_EXPORTS_API int __stdcall GetSplineKnotCount(DxfDocument_Handle hdxfDocument, const DxfSplineEntity* splineEntity)
+{
+	if (!hdxfDocument || !splineEntity)return -1;
+	const SplineKnotList* pSFP = dxflibCreationClass::GetSplineKnotList(splineEntity->_knotsHandle);
+	return static_cast<int>(pSFP->size());
+}
+
 dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocument)
 {
 	if (!hdxfDocument)return -1;
@@ -417,20 +512,38 @@ dxflib_EXPORTS_API int __stdcall WriteSingleEntity(
 	int newIndex = static_cast<int>(pDoc->g_writeEntityList.size());
 
 	// 安全拷贝数据
-	DxfEntityWrapper localEntity = *pWrapper;
+	DxfEntityWrapper localEntity = *pWrapper;//localEntity在栈上
 
 	if (localEntity.type == DXF_ENTITY_POLYLINE)
-	{
-		std::vector<DxfPoint> points;
+	{//多段线顶点动态数组
+		//std::vector<DxfPoint> points;
+		PolylinePointList points;
 		points.reserve(localEntity.data.polyline.vertexCount);
-		int handle = dxflibCreationClass::CreatePolylineList(points);
+		int handle = dxflibCreationClass::CreatePolylineList(points);//CreatePolylineList内部会拷贝，points销毁也无所谓
 
 		localEntity.data.polyline._vertexHandle = handle;
+	}
+	else if (localEntity.type == DXF_ENTITY_SPLINE)
+	{//样条线控制点、拟合点、节点向量
+		SplineControlPointList SCPL;
+		SCPL.reserve(localEntity.data.spline.ccontrolCount);
+		int handleSCPL = dxflibCreationClass::CreateSplineControlPointList(SCPL);
+		localEntity.data.spline._controlPointsHandle = handleSCPL;
+
+		SplineFitPointList SFPL;
+		SFPL.reserve(localEntity.data.spline.fitCount);
+		int handleSFPL = dxflibCreationClass::CreateSplineFitPointList(SFPL);
+		localEntity.data.spline._fitPointHandle = handleSFPL;
+
+		SplineKnotList SKL;
+		SKL.reserve(localEntity.data.spline.knotCount);
+		int handleSKL = dxflibCreationClass::CreateSplineKnotList(SKL);
+		localEntity.data.spline._knotsHandle = handleSKL;
 	}
 
 	// 存入列表
 	//pDoc->g_entityList.push_back(localEntity);
-	pDoc->g_writeEntityList.push_back(localEntity);
+	pDoc->g_writeEntityList.push_back(localEntity);//值拷贝，出了函数localEntity被销毁与数组中无关
 
 	// 返回索引
 	return newIndex;
@@ -480,6 +593,103 @@ dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakEntity(
 
 	return 0;
 }
+
+dxflib_EXPORTS_API int __stdcall WriteSingleSplineControlPointEntity(
+	DxfDocument_Handle hdxfDocument,
+	int entityIndex,
+	const SplineControlPoint* pSCP
+)
+{
+	if (!hdxfDocument || !pSCP) return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	if (entityIndex < 0 || entityIndex >= pDoc->g_writeEntityList.size()) return -1;
+
+	DxfEntityWrapper& targetEntity = pDoc->g_writeEntityList[entityIndex];
+	if (targetEntity.type != DXF_ENTITY_SPLINE) return -1;
+
+	DxfSplineControlPoint_Handle hControlPoint = targetEntity.data.spline._controlPointsHandle;
+
+	if (hControlPoint == 0)
+		return -1;
+
+	SplineControlPointList* pSCPL = dxflibCreationClass::GetSplineControlPointList(hControlPoint);
+	if (!pSCPL)
+		return -1;
+
+	if (pSCPL->size() >= targetEntity.data.spline.ccontrolCount)
+		return -1;
+
+	pSCPL->push_back(*pSCP);
+
+	return 0;
+}
+
+dxflib_EXPORTS_API int __stdcall WriteSingleSplineFitPointEntity(
+	DxfDocument_Handle hdxfDocument,
+	int entityIndex,
+	const SplineFitPoint* pSFP
+)
+{
+	if (!hdxfDocument || !pSFP) return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	if (entityIndex < 0 || entityIndex >= pDoc->g_writeEntityList.size()) return -1;
+
+	DxfEntityWrapper& targetEntity = pDoc->g_writeEntityList[entityIndex];
+	if (targetEntity.type != DXF_ENTITY_SPLINE) return -1;
+
+	DxfSplineFitPoint_Handle hFitPoint = targetEntity.data.spline._fitPointHandle;
+
+	if (hFitPoint == 0)
+		return -1;
+
+	SplineFitPointList* pSFPL = dxflibCreationClass::GetSplineFitPointList(hFitPoint);
+	if (!pSFPL)
+		return -1;
+
+	if (pSFPL->size() >= targetEntity.data.spline.fitCount)
+		return -1;
+
+	pSFPL->push_back(*pSFP);
+
+	return 0;
+}
+
+dxflib_EXPORTS_API int __stdcall WriteSingleSplineKnotEntity(
+	DxfDocument_Handle hdxfDocument,
+	int entityIndex,
+	const SplineKnot* pSK
+)
+{
+	if (!hdxfDocument || !pSK) return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	if (entityIndex < 0 || entityIndex >= pDoc->g_writeEntityList.size()) return -1;
+
+	DxfEntityWrapper& targetEntity = pDoc->g_writeEntityList[entityIndex];
+	if (targetEntity.type != DXF_ENTITY_SPLINE) return -1;
+
+	DxfSplineKnot_Handle hK = targetEntity.data.spline._knotsHandle;
+
+	if (hK == 0)
+		return -1;
+
+	SplineKnotList* pSKL = dxflibCreationClass::GetSplineKnotList(hK);
+	if (!pSKL)
+		return -1;
+
+	if (pSKL->size() >= targetEntity.data.spline.knotCount)
+		return -1;
+
+	pSKL->push_back(*pSK);
+
+	return 0;
+}
+
 dxflib_EXPORTS_API int __stdcall WriteSingleBlock(
 	DxfDocument_Handle hdxfDocument,
 	const char* blockName,
@@ -504,12 +714,30 @@ dxflib_EXPORTS_API int __stdcall WriteSingleBlock(
 
 			if (localEntity.type == DXF_ENTITY_POLYLINE)
 			{
-				std::vector<DxfPoint>points;
+				//std::vector<DxfPoint>points;
+				PolylinePointList points;
 				points.reserve(localEntity.data.polyline.vertexCount);
 
 				int handle = dxflibCreationClass::CreatePolylineList(points);
 
 				localEntity.data.polyline._vertexHandle = handle;
+			}
+			else if (localEntity.type == DXF_ENTITY_SPLINE)
+			{
+				SplineControlPointList SCPL;
+				SCPL.reserve(localEntity.data.spline.ccontrolCount);
+				int handleSCPL = dxflibCreationClass::CreateSplineControlPointList(SCPL);
+				localEntity.data.spline._controlPointsHandle = handleSCPL;
+
+				SplineFitPointList SFPL;
+				SFPL.reserve(localEntity.data.spline.fitCount);
+				int handleSFPL = dxflibCreationClass::CreateSplineFitPointList(SFPL);
+				localEntity.data.spline._fitPointHandle = handleSFPL;
+
+				SplineKnotList SKL;
+				SKL.reserve(localEntity.data.spline.knotCount);
+				int handleSKL = dxflibCreationClass::CreateSplineKnotList(SKL);
+				localEntity.data.spline._knotsHandle = handleSKL;
 			}
 			newIndex = pDoc->g_writeBlockList[i].g_blockEntityList.size();//size个数，推送后此个数和最后索引相同了
 			// 存入列表
@@ -531,12 +759,30 @@ dxflib_EXPORTS_API int __stdcall WriteSingleBlock(
 
 		if (localEntity.type == DXF_ENTITY_POLYLINE)
 		{
-			std::vector<DxfPoint>points;
+			//std::vector<DxfPoint>points;
+			PolylinePointList points;
 			points.reserve(localEntity.data.polyline.vertexCount);
 
 			int handle = dxflibCreationClass::CreatePolylineList(points);
 
 			localEntity.data.polyline._vertexHandle = handle;
+		}
+		else if (localEntity.type == DXF_ENTITY_SPLINE)
+		{
+			SplineControlPointList SCPL;
+			SCPL.reserve(localEntity.data.spline.ccontrolCount);
+			int handleSCPL = dxflibCreationClass::CreateSplineControlPointList(SCPL);
+			localEntity.data.spline._controlPointsHandle = handleSCPL;
+
+			SplineFitPointList SFPL;
+			SFPL.reserve(localEntity.data.spline.fitCount);
+			int handleSFPL = dxflibCreationClass::CreateSplineFitPointList(SFPL);
+			localEntity.data.spline._fitPointHandle = handleSFPL;
+
+			SplineKnotList SKL;
+			SKL.reserve(localEntity.data.spline.knotCount);
+			int handleSKL = dxflibCreationClass::CreateSplineKnotList(SKL);
+			localEntity.data.spline._knotsHandle = handleSKL;
 		}
 		newIndex = 0;
 		// 存入列表
@@ -590,7 +836,125 @@ dxflib_EXPORTS_API int __stdcall WriteSinglePolylinePeakBlock(
 	return -1;
 }
 
+dxflib_EXPORTS_API int __stdcall WriteSingleSplineControlPointBlock(
+	DxfDocument_Handle hdxfDocument,
+	const char* blockName,
+	int entityIndex,
+	const SplineControlPoint* pSCP
+)
+{
+	if (!hdxfDocument || !pSCP) return -1;
 
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	for (int i = 0;i < pDoc->g_writeBlockList.size();i++)
+	{
+		if (pDoc->g_writeBlockList[i].blockName == blockName)
+		{//点要加入的块
+			if (entityIndex < 0 || entityIndex >= pDoc->g_writeBlockList[i].g_blockEntityList.size()) return -1;
+			DxfEntityWrapper& targetEntity = pDoc->g_writeBlockList[i].g_blockEntityList[entityIndex];
+
+			//确定实体是样条线
+			if (targetEntity.type != DXF_ENTITY_SPLINE) return -1;
+
+			DxfSplineControlPoint_Handle hSCP = targetEntity.data.spline._controlPointsHandle;
+
+			if (hSCP == 0)
+				return -1;
+
+			SplineControlPointList* pSCPL = dxflibCreationClass::GetSplineControlPointList(hSCP);
+			if (!pSCPL)
+				return -1;
+
+			if (pSCPL->size() >= targetEntity.data.spline.ccontrolCount)return -1;
+
+			pSCPL->push_back(*pSCP);
+
+			return 0;
+		}
+	}
+	return -1;
+}
+
+dxflib_EXPORTS_API int __stdcall WriteSingleSplineFitPointBlock(
+	DxfDocument_Handle hdxfDocument,
+	const char* blockName,
+	int entityIndex,
+	const SplineFitPoint* pSFP
+)
+{
+	if (!hdxfDocument || !pSFP) return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	for (int i = 0;i < pDoc->g_writeBlockList.size();i++)
+	{
+		if (pDoc->g_writeBlockList[i].blockName == blockName)
+		{//点要加入的块
+			if (entityIndex < 0 || entityIndex >= pDoc->g_writeBlockList[i].g_blockEntityList.size()) return -1;
+			DxfEntityWrapper& targetEntity = pDoc->g_writeBlockList[i].g_blockEntityList[entityIndex];
+
+			//确定实体是样条线
+			if (targetEntity.type != DXF_ENTITY_SPLINE) return -1;
+
+			DxfSplineFitPoint_Handle hSFP = targetEntity.data.spline._fitPointHandle;
+
+			if (hSFP == 0)
+				return -1;
+
+			SplineFitPointList* pSFPL = dxflibCreationClass::GetSplineFitPointList(hSFP);
+			if (!pSFPL)
+				return -1;
+
+			if (pSFPL->size() >= targetEntity.data.spline.fitCount)return -1;
+
+			pSFPL->push_back(*pSFP);
+
+			return 0;
+		}
+	}
+	return -1;
+}
+
+dxflib_EXPORTS_API int __stdcall WriteSingleSplineKnotBlock(
+	DxfDocument_Handle hdxfDocument,
+	const char* blockName,
+	int entityIndex,
+	const SplineKnot* pSK
+)
+{
+	if (!hdxfDocument || !pSK) return -1;
+
+	dxflibCreationClass* pDoc = static_cast<dxflibCreationClass*>(hdxfDocument);
+
+	for (int i = 0;i < pDoc->g_writeBlockList.size();i++)
+	{
+		if (pDoc->g_writeBlockList[i].blockName == blockName)
+		{//点要加入的块
+			if (entityIndex < 0 || entityIndex >= pDoc->g_writeBlockList[i].g_blockEntityList.size()) return -1;
+			DxfEntityWrapper& targetEntity = pDoc->g_writeBlockList[i].g_blockEntityList[entityIndex];
+
+			//确定实体是样条线
+			if (targetEntity.type != DXF_ENTITY_SPLINE) return -1;
+
+			DxfSplineKnot_Handle hSK = targetEntity.data.spline._knotsHandle;
+
+			if (hSK == 0)
+				return -1;
+
+			SplineKnotList* pSKL = dxflibCreationClass::GetSplineKnotList(hSK);
+			if (!pSKL)
+				return -1;
+
+			if (pSKL->size() >= targetEntity.data.spline.knotCount)return -1;//knotCount为负数会变无符号检测，变无穷大
+
+			pSKL->push_back(*pSK);
+
+			return 0;
+		}
+	}
+	return -1;
+}
 
 dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxfDocument)
 {
@@ -747,13 +1111,14 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 
 #pragma region 写入块定义信息
 	dw->sectionBlocks();
-	//下方三个块全都要有
+#pragma region DXF必要的两个容器块，*Model_Space显示实际画面，*Paper_Space显示要打印内容
 	dxf->writeBlock(*dw, DL_BlockData("*Model_Space", 0, 0.0, 0.0, 0.0));
 	dxf->writeEndBlock(*dw, "*Model_Space");//实体所在图纸空间
 	dxf->writeBlock(*dw, DL_BlockData("*Paper_Space", 0, 0.0, 0.0, 0.0));
 	dxf->writeEndBlock(*dw, "*Paper_Space");//布局空间（用来出图打印）
 	//dxf->writeBlock(*dw, DL_BlockData("*Paper_Space0", 0, 0.0, 0.0, 0.0));
 	//dxf->writeEndBlock(*dw, "*Paper_Space0");//默认布局
+#pragma endregion
 
 	for (const auto& block : pDoc->g_writeBlockList)//C++的遍历
 	{
@@ -912,7 +1277,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 			break;
 
 			case DxfEntityType::DXF_ENTITY_ELLIPSE:
-			{
+			{//椭圆
 				DxfEllipseEntity tempEntity = entity.data.ellipse;
 				dxf->writeEllipse(
 					*dw,
@@ -930,6 +1295,75 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
 			}
 			break;
+
+			case DxfEntityType::DXF_ENTITY_SPLINE:
+			{//样条线
+				DxfSplineEntity tempEntity = entity.data.spline;
+				dxf->writeSpline(
+					*dw,
+					DL_SplineData(
+						tempEntity.degree,
+						tempEntity.knotCount,
+						tempEntity.ccontrolCount,
+						tempEntity.fitCount,
+						tempEntity.flags
+					),
+					DL_Attributes("0"/*"mainlayer"*/, 125, -1, "BYLAYER", 1.0));
+				if (tempEntity._controlPointsHandle != 0)
+				{
+					SplineControlPointList* pSCPL = dxflibCreationClass::GetSplineControlPointList(tempEntity._controlPointsHandle);
+					if (pSCPL && !pSCPL->empty())
+					{
+						for (const auto& SCPL : *pSCPL)
+						{
+							dxf->writeControlPoint(
+								*dw,
+								DL_ControlPointData(
+									SCPL.controlPoint.x,
+									SCPL.controlPoint.y,
+									SCPL.controlPoint.z,
+									SCPL.weight
+								)
+							);
+						}
+					}
+				}
+				if (tempEntity._fitPointHandle != 0)
+				{
+					SplineFitPointList* pSFPL = dxflibCreationClass::GetSplineFitPointList(tempEntity._fitPointHandle);
+					if (pSFPL && !pSFPL->empty())
+					{
+						for (const auto& SFPL : *pSFPL)
+						{
+							dxf->writeFitPoint(
+								*dw,
+								DL_FitPointData(
+									SFPL.fitPoint.x,
+									SFPL.fitPoint.y,
+									SFPL.fitPoint.z
+								)
+							);
+						}
+					}
+				}
+				if (tempEntity._knotsHandle != 0)
+				{
+					SplineKnotList* pSKL = dxflibCreationClass::GetSplineKnotList(tempEntity._knotsHandle);
+					if (pSKL || !pSKL->empty())
+					{
+						for (const auto& SFPL : *pSKL)
+						{
+							dxf->writeKnot(
+								*dw,
+								DL_KnotData(
+									SFPL.knot
+								)
+							);
+						}
+					}
+				}
+			}
+			break;
 			default:
 				break;
 			}
@@ -945,7 +1379,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 #pragma region 写入实体段
 
 	dw->sectionEntities();
-	for (int i = 0;i < pDoc->g_writeEntityList.size();i++)
+	for (unsigned int i = 0;i < pDoc->g_writeEntityList.size();i++)
 	{
 		switch (pDoc->g_writeEntityList[i].type)
 		{
@@ -1094,7 +1528,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 		break;
 
 		case DxfEntityType::DXF_ENTITY_ELLIPSE:
-		{
+		{//椭圆
 			DxfEllipseEntity tempEntity = pDoc->g_writeEntityList[i].data.ellipse;
 			dxf->writeEllipse(
 				*dw,
@@ -1110,6 +1544,75 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 					tempEntity.EndAngle
 				),
 				DL_Attributes("mainlayer", 125, -1, "BYLAYER", 1.0));
+		}
+		break;
+
+		case DxfEntityType::DXF_ENTITY_SPLINE:
+		{//样条线
+			DxfSplineEntity tempEntity = pDoc->g_writeEntityList[i].data.spline;
+			dxf->writeSpline(
+				*dw,
+				DL_SplineData(
+					tempEntity.degree,
+					tempEntity.knotCount,
+					tempEntity.ccontrolCount,
+					tempEntity.fitCount,
+					tempEntity.flags
+				),
+				DL_Attributes("mainlayer", 125, -1, "BYLAYER", 1.0));
+			if (tempEntity._controlPointsHandle != 0)
+			{
+				SplineControlPointList* pSCPL = dxflibCreationClass::GetSplineControlPointList(tempEntity._controlPointsHandle);
+				if (pSCPL && !pSCPL->empty())
+				{
+					for (const auto& SCPL : *pSCPL)
+					{
+						dxf->writeControlPoint(
+							*dw,
+							DL_ControlPointData(
+								SCPL.controlPoint.x,
+								SCPL.controlPoint.y,
+								SCPL.controlPoint.z,
+								SCPL.weight
+							)
+						);
+					}
+				}
+			}
+			if (tempEntity._fitPointHandle != 0)
+			{
+				SplineFitPointList* pSFPL = dxflibCreationClass::GetSplineFitPointList(tempEntity._fitPointHandle);
+				if (pSFPL && !pSFPL->empty())
+				{
+					for (const auto& SFPL : *pSFPL)
+					{
+						dxf->writeFitPoint(
+							*dw,
+							DL_FitPointData(
+								SFPL.fitPoint.x,
+								SFPL.fitPoint.y,
+								SFPL.fitPoint.z
+							)
+						);
+					}
+				}
+			}
+			if (tempEntity._knotsHandle != 0)
+			{
+				SplineKnotList* pSKL = dxflibCreationClass::GetSplineKnotList(tempEntity._knotsHandle);
+				if (pSKL && !pSKL->empty())
+				{
+					for (const auto& SFPL : *pSKL)
+					{
+						dxf->writeKnot(
+							*dw,
+							DL_KnotData(
+								SFPL.knot
+							)
+						);
+					}
+				}
+			}
 		}
 		break;
 		default:

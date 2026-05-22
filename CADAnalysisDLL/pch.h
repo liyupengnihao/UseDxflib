@@ -20,7 +20,8 @@
 #include <string>
 #include <memory>//智能指针
 #include <iostream>
-#include <stdio.h>
+#include <stdio.h>//与#include <cstdio>内容一样，但<stdio.h>在全局中<cstdio>在std命名空间中，<cstdio>使用时函数要加std::
+//#include <cstdio>
 #include <stack>//栈
 #include <cmath>//此中拿到πstd::acos(-1.0)
 

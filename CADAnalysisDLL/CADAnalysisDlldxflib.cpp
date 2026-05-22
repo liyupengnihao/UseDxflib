@@ -436,6 +436,10 @@ void dxflibCreationClass::addSpline(const DL_SplineData& data)
 	pSpline->flags = data.flags;
 	SplineControlPointList scpList;
 	pSpline->_controlPointsHandle = CreateSplineControlPointList(scpList);
+	SplineFitPointList sfpList;
+	pSpline->_fitPointHandle = CreateSplineFitPointList(sfpList);
+	SplineKnotList skList;
+	pSpline->_knotsHandle = CreateSplineKnotList(skList);
 
 	m_splineStack.push(pSpline);
 	printAttributes();

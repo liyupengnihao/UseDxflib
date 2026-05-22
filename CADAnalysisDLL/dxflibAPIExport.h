@@ -153,7 +153,7 @@ extern "C"
 	/// </summary>
 	typedef struct DxfPolylineEntity {
 		//DxfEntityAttr attr;
-		int vertexCount;           // 顶点数量
+		int vertexCount;           // 顶点数量,写入用于限制最大顶点数量
 		int pFlags;          // 多段线类型，0普通，1闭合，4曲线拟合，16 3D多段线，32 3D多边型网格，64 多边形网格闭合（N反向），128 多面体网格
 		DxfPolylineVertexBuffer_Handle _vertexHandle; // 替代了 DxfPoint* vertices，动态个数
 	} DxfPolylineEntity;
@@ -172,13 +172,13 @@ extern "C"
 		double rotation;        // 旋转角度
 	} DxfInsertEntity;
 
-	typedef struct DxfSplineEntity {
+	typedef struct DxfSplineEntity {//写入时控制点+节点与拟合点必须二选一
 		//DxfEntityAttr attr;
-		int degree;					// 阶数,常见三阶有理2次样条
+		int degree;					// 次数,常见2次三阶，有理2次样条，
 		int ccontrolCount;			// 控制点数量，控制点与拟合点通常不同时存在，大多是控制点
 		int fitCount;				// 拟合点数，控制点与拟合点通常不同时存在,大多是控制点
-		int knotCount;				// 节点数量
-		int flags;					// 标志	1闭合样条曲线、2周期性样条曲线、4有理样条曲线、8平面、16线性（同时还设置平面位）
+		int knotCount;				// 节点数量=控制点数量+阶数+1(与控制点和阶数一定是此关系)
+		int flags;					// 标志	1闭合样条曲线、2周期性样条曲线、4有理样条曲线(使用权重(NURBS))、8平面、16线性（代表样条线由一系列直线段组成，同时还设置平面位）
 		DxfSplineControlPoint_Handle	_controlPointsHandle;	// 控制点
 		DxfSplineFitPoint_Handle		_fitPointHandle;		//拟合点
 		DxfSplineKnot_Handle			_knotsHandle;			//向量节点
@@ -334,14 +334,28 @@ extern "C"
 	/// <returns></returns>
 	dxflib_EXPORTS_API int __stdcall GetVertexAt(DxfDocument_Handle hdxfDocument, const int index, const DxfPolylineEntity* polylineEntity, DxfPoint* outPoint);
 
-	//dxflib_EXPORTS_API void __stdcall usage();
-	//dxflib_EXPORTS_API void __stdcall testReading(char* file);
-	//dxflib_EXPORTS_API void __stdcall testWriting();
+	///////////////////////////////////////////////////////////////////////////////////////得到样条线实体数据相关
+	
+	/// <summary>
+	/// 得到样条线控制点的数量
+	/// </summary>
+	/// <param name="hdxfDocument"></param>
+	/// <param name="splineEntity"></param>
+	/// <returns>样条线顶点数</returns>
+	dxflib_EXPORTS_API int __stdcall GetSplineControlPointCount(DxfDocument_Handle hdxfDocument, const DxfSplineEntity* splineEntity);
 
+	dxflib_EXPORTS_API int __stdcall GetSplineControlPointAt(DxfDocument_Handle hdxfDocument, const int index, const DxfSplineEntity* splineEntity, SplineControlPoint* outControlPoint);
 
+	dxflib_EXPORTS_API int __stdcall GetSplineFitPointCount(DxfDocument_Handle hdxfDocument, const DxfSplineEntity* splineEntity);
+
+	dxflib_EXPORTS_API int __stdcall GetSplineFitPointAt(DxfDocument_Handle hdxfDocument, const int index, const DxfSplineEntity* splineEntity, SplineFitPoint* outFitPoint);
+
+	dxflib_EXPORTS_API int __stdcall GetSplineKnotCount(DxfDocument_Handle hdxfDocument, const DxfSplineEntity* splineEntity);
+
+	dxflib_EXPORTS_API int __stdcall GetSplineKnotPointAt(DxfDocument_Handle hdxfDocument, const int index, const DxfSplineEntity* splineEntity, SplineKnot* outKnot);
 	//////////////////////////////////////////////////////////////////////////////////////////////写入相关
 
-
+	/////////////////////////////////////////////////////////////////////////写入实体段
 	/// <summary>
 	/// 推送单个实体到动态数组，为多段线还需使用WriteSinglePolylinePeakEntity向实体中写入顶点
 	/// </summary>
@@ -366,6 +380,25 @@ extern "C"
 		const DxfPoint* pPoint//pod类型可以跨dll传指针访问对象成员,库内拷贝值，库外销毁拷贝值还在
 	);
 
+	/////////////////////////////////////////////////样条线加入控制点、节点向量或拟合点
+	dxflib_EXPORTS_API int __stdcall WriteSingleSplineControlPointEntity(
+		DxfDocument_Handle hdxfDocument,
+		int entityIndex,
+		const SplineControlPoint* pSCP
+	);
+
+	dxflib_EXPORTS_API int __stdcall WriteSingleSplineFitPointEntity(
+		DxfDocument_Handle hdxfDocument,
+		int entityIndex,
+		const SplineFitPoint* pSFP
+	);
+
+	dxflib_EXPORTS_API int __stdcall WriteSingleSplineKnotEntity(
+		DxfDocument_Handle hdxfDocument,
+		int entityIndex,
+		const SplineKnot* pSK
+	);
+	/////////////////////////////////////////////////////////////////////////写入块段
 	/// <summary>
 	/// 写入块内容
 	/// </summary>
@@ -394,8 +427,31 @@ extern "C"
 		const DxfPoint* pPoint
 	);
 
+	/////////////////////////////////////////////////向块中样条线加入控制点、节点向量或拟合点
+	dxflib_EXPORTS_API int __stdcall WriteSingleSplineControlPointBlock(
+		DxfDocument_Handle hdxfDocument,
+		const char* blockName,
+		int entityIndex,
+		const SplineControlPoint* pSCP
+	);
+
+	dxflib_EXPORTS_API int __stdcall WriteSingleSplineFitPointBlock(
+		DxfDocument_Handle hdxfDocument,
+		const char* blockName,
+		int entityIndex,
+		const SplineFitPoint* pSFP
+	);
+
+	dxflib_EXPORTS_API int __stdcall WriteSingleSplineKnotBlock(
+		DxfDocument_Handle hdxfDocument,
+		const char* blockName,
+		int entityIndex,
+		const SplineKnot* pSK
+	);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////销毁内容
 	/// <summary>
-	/// 删除要写入dxf的实例动态数组内容
+	/// 删除要写入dxf的实体动态数组内容
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <returns></returns>
@@ -406,7 +462,7 @@ extern "C"
 	/// <param name="hdxfDocument"></param>
 	/// <returns></returns>
 	dxflib_EXPORTS_API int __stdcall DeleteWriteVectorBlock(DxfDocument_Handle hdxfDocument);
-
+	////////////////////////////////////////////////////////////////////////////////////Dxf文件写入
 	/// <summary>
 	/// 将实体数组写入dxf中，无文件创建有文件修改
 	/// </summary>
