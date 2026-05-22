@@ -59,13 +59,13 @@ extern "C"
 	/// </summary>
 	typedef struct SplineControlPoint {
 		DxfPoint controlPoint;
-		double weight;//权重默认=1，weight>1:更靠近控制点，0<weight<1:曲线远离控制点，weight=0此点几乎不起作用
+		double weight;//权重默认=1，weight>1:更靠近控制点，0<weight<1:曲线远离控制点，weight=0此点几乎不起作用(QCAD只能按权重1来渲染，实际文件中不是1)
 	}SplineControlPoint;
 	/// <summary>
 	/// 样条曲线单个拟合点
 	/// </summary>
 	typedef struct SplineFitPoint {
-		DxfPoint fitPoint;
+		DxfPoint fitPoint;//QCAD无法渲染拟合点的样条线
 	}SplineFitPoint;
 	/// <summary>
 	/// 样条曲线单个节点向量，值为控制点数量+阶数+1（读与写都是如此计算）

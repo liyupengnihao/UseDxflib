@@ -22,8 +22,9 @@ int main() {
 	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
 	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newsix.dxf");
 	//ReadDXF(hdxfDocument, "C:/Users/Public/Nwt/cache/recv/程佳佳/8985FDB-FD-007-00.DXF");
-	ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newseven.dxf");
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newseven.dxf");
 	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/neweight.dxf");
+	ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newnine.dxf");
 
 
 #pragma region 重写dxf
@@ -160,56 +161,56 @@ int main() {
 
 #pragma region 样条线写入
 #pragma region 控制点（权重1）与节点（随机从小到大0到1）
-	poly.type = DxfEntityType::DXF_ENTITY_SPLINE;
-	poly.data.spline.degree = 2;//次数
-	poly.data.spline.ccontrolCount = 4;
-	poly.data.spline.fitCount = 0;
-	poly.data.spline.knotCount = 7;//=degree+ccontrolCount+1
-	poly.data.spline.flags = 4;
+	//poly.type = DxfEntityType::DXF_ENTITY_SPLINE;
+	//poly.data.spline.degree = 2;//次数
+	//poly.data.spline.ccontrolCount = 4;
+	//poly.data.spline.fitCount = 0;
+	//poly.data.spline.knotCount = 7;//=degree+ccontrolCount+1
+	//poly.data.spline.flags = 4;
 
-	inIndex = WriteSingleEntity(hdxfDocument, &poly);
+	//inIndex = WriteSingleEntity(hdxfDocument, &poly);
 
-	if (inIndex >= 0)
-	{
-		SplineControlPoint SCP = { {150,150,0}, 1 };//也是栈上
+	//if (inIndex >= 0)
+	//{
+	//	SplineControlPoint SCP = { {150,150,0}, 1 };//也是栈上
 
-		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
-		SCP = { {170, 200,0},1 };
-		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
-		SCP = { {180,140,0},1 };
-		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
-		SCP = { {200,170,0},1 };
-		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
+	//	WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
+	//	SCP = { {170, 200,0},1 };
+	//	WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
+	//	SCP = { {180,140,0},1 };
+	//	WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
+	//	SCP = { {200,170,0},1 };
+	//	WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
 
-		// 随机数引擎（mt19937）
-		std::random_device rd;  // 真随机数设备
-		std::mt19937 rng(rd());  // 构造时直接播种
+	//	// 随机数引擎（mt19937）
+	//	std::random_device rd;  // 真随机数设备
+	//	std::mt19937 rng(rd());  // 构造时直接播种
 
-		std::uniform_real_distribution<double> realDist(0.0, 1.0);
-		double Knot[7];
-		//std::array<double, 7> Knot;
-		for (double& knot : Knot)
-		{
-			knot = realDist(rng);
-		}
-		//冒泡小到大
-		for (int i = 0; i < sizeof(Knot) / sizeof(Knot[0]) - 1; i++) {
-			for (int j = 0; j < sizeof(Knot) / sizeof(Knot[0]) - 1 - i; j++) {
-				if (Knot[j] > Knot[j + 1]) {
-					// 交换//更大的向后排//一轮结束最大的排最后
-					double temp = Knot[j];
-					Knot[j] = Knot[j + 1];
-					Knot[j + 1] = temp;
-				}
-			}
-		}
-		Knot[0] = 0;//给0看会不会郭第一个控制点
-		for (int i = 0;i < sizeof(Knot) / sizeof(Knot[0]);i++)
-		{
-			SplineKnot temp = { Knot[i] };
-			WriteSingleSplineKnotEntity(hdxfDocument, inIndex, &temp);
-		}
-	}
+	//	std::uniform_real_distribution<double> realDist(0.0, 1.0);
+	//	double Knot[7];
+	//	//std::array<double, 7> Knot;
+	//	for (double& knot : Knot)
+	//	{
+	//		knot = realDist(rng);
+	//	}
+	//	//冒泡小到大
+	//	for (int i = 0; i < sizeof(Knot) / sizeof(Knot[0]) - 1; i++) {
+	//		for (int j = 0; j < sizeof(Knot) / sizeof(Knot[0]) - 1 - i; j++) {
+	//			if (Knot[j] > Knot[j + 1]) {
+	//				// 交换//更大的向后排//一轮结束最大的排最后
+	//				double temp = Knot[j];
+	//				Knot[j] = Knot[j + 1];
+	//				Knot[j + 1] = temp;
+	//			}
+	//		}
+	//	}
+	//	Knot[0] = 0;//给0看会不会郭第一个控制点
+	//	for (int i = 0;i < sizeof(Knot) / sizeof(Knot[0]);i++)
+	//	{
+	//		SplineKnot temp = { Knot[i] };
+	//		WriteSingleSplineKnotEntity(hdxfDocument, inIndex, &temp);
+	//	}
+	//}
 
 #pragma endregion
 
@@ -228,15 +229,17 @@ int main() {
 		SplineControlPoint SCP = { {-50,50,0}, 1 };//也是栈上
 
 		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
-		SCP = { {-30, 100,0},1 };
+		SCP = { {-30, 100,0},3 };
 		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
-		SCP = { {-20,40,0},1 };
+		SCP = { {-20,40,0},5 };
 		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
-		SCP = { {0,70,0},1 };
+		SCP = { {0,70,0},9 };
 		WriteSingleSplineControlPointEntity(hdxfDocument, inIndex, &SCP);
 
+		//double Knot[7] = { 0,1,2.5,3,4,4,6 };
 		for (int i = 0;i < 7;i++)
 		{
+			//SplineKnot temp = { Knot[i] };
 			SplineKnot temp = { i };
 			WriteSingleSplineKnotEntity(hdxfDocument, inIndex, &temp);
 		}
@@ -380,7 +383,7 @@ int main() {
 
 
 	//WriteDXF(hdxfDocument, "newFive.dxf");
-	WriteDXF(hdxfDocument, "neweight.dxf");
+	WriteDXF(hdxfDocument, "newten.dxf");
 
 #pragma endregion
 

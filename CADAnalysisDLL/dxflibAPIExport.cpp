@@ -1550,6 +1550,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 		case DxfEntityType::DXF_ENTITY_SPLINE:
 		{//样条线
 			DxfSplineEntity tempEntity = pDoc->g_writeEntityList[i].data.spline;
+			std::cout << "写入样条线标志：" << tempEntity.flags << std::endl;
 			dxf->writeSpline(
 				*dw,
 				DL_SplineData(
@@ -1560,6 +1561,22 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 					tempEntity.flags
 				),
 				DL_Attributes("mainlayer", 125, -1, "BYLAYER", 1.0));
+			if (tempEntity._knotsHandle != 0)
+			{
+				SplineKnotList* pSKL = dxflibCreationClass::GetSplineKnotList(tempEntity._knotsHandle);
+				if (pSKL && !pSKL->empty())
+				{
+					for (const auto& SFPL : *pSKL)
+					{
+						dxf->writeKnot(
+							*dw,
+							DL_KnotData(
+								SFPL.knot
+							)
+						);
+					}
+				}
+			}
 			if (tempEntity._controlPointsHandle != 0)
 			{
 				SplineControlPointList* pSCPL = dxflibCreationClass::GetSplineControlPointList(tempEntity._controlPointsHandle);
@@ -1567,6 +1584,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 				{
 					for (const auto& SCPL : *pSCPL)
 					{
+						std::cout << "写入样条线控制点权重：" << SCPL.weight << std::endl;
 						dxf->writeControlPoint(
 							*dw,
 							DL_ControlPointData(
@@ -1592,22 +1610,6 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 								SFPL.fitPoint.x,
 								SFPL.fitPoint.y,
 								SFPL.fitPoint.z
-							)
-						);
-					}
-				}
-			}
-			if (tempEntity._knotsHandle != 0)
-			{
-				SplineKnotList* pSKL = dxflibCreationClass::GetSplineKnotList(tempEntity._knotsHandle);
-				if (pSKL && !pSKL->empty())
-				{
-					for (const auto& SFPL : *pSKL)
-					{
-						dxf->writeKnot(
-							*dw,
-							DL_KnotData(
-								SFPL.knot
 							)
 						);
 					}
