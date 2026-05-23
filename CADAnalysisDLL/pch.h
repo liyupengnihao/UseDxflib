@@ -26,5 +26,4 @@
 #include <cmath>//此中拿到πstd::acos(-1.0)
 
 #include <boost/variant.hpp>
-
 #endif //PCH_H

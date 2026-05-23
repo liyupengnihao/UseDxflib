@@ -75,13 +75,12 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 				{//打印的全是0
 					DxfPolylineEntity polylineData = entity.data.polyline;
 					std::cout << "块内发现多段线:顶点个数" << polylineData.vertexCount << "收尾是否相接：" << polylineData.pFlags << std::endl;
-					DxfPoint* tempPoint = new DxfPoint();
+					DxfPoint tempPoint;
 					for (int i = 0;i < polylineData.vertexCount;i++)
 					{
-						GetVertexAt(hdxfDocument, i, &polylineData, tempPoint);
-						std::cout << "顶点" << i << "(" << tempPoint->x << "," << tempPoint->y << "," << tempPoint->z << ")" << std::endl;
+						GetVertexAt(hdxfDocument, i, &polylineData, &tempPoint);
+						std::cout << "顶点" << i << "(" << tempPoint.x << "," << tempPoint.y << "," << tempPoint.z << ")" << std::endl;
 					}
-					delete tempPoint;
 				}
 				else if (entity.type == DxfEntityType::DXF_ENTITY_INSERT)
 				{
@@ -160,13 +159,12 @@ dxflib_EXPORTS_API int __stdcall ReadDXF(DxfDocument_Handle hdxfDocument, const 
 			{//打印的全是0
 				DxfPolylineEntity polylineData = entity.data.polyline;
 				std::cout << "发现多段线:顶点个数" << polylineData.vertexCount << "收尾是否相接：" << polylineData.pFlags << std::endl;
-				DxfPoint* tempPoint = new DxfPoint();
+				DxfPoint tempPoint;
 				for (int i = 0;i < polylineData.vertexCount;i++)
 				{
-					GetVertexAt(hdxfDocument, i, &polylineData, tempPoint);
-					std::cout << "顶点" << i << "(" << tempPoint->x << "," << tempPoint->y << "," << tempPoint->z << ")" << std::endl;
+					GetVertexAt(hdxfDocument, i, &polylineData, &tempPoint);
+					std::cout << "顶点" << i << "(" << tempPoint.x << "," << tempPoint.y << "," << tempPoint.z << ")" << std::endl;
 				}
-				delete tempPoint;
 			}
 			else if (entity.type == DxfEntityType::DXF_ENTITY_INSERT)
 			{
@@ -414,7 +412,7 @@ dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocu
 	// 遍历所有元素，释放 polyline 里的句柄内存
 	for (auto& wrapper : pDoc->g_entityList)
 	{
-		// 只有多段线 Polyline 有动态句柄，需要释放
+		// 只有多段线 Polyline与样条线 有动态句柄，需要释放
 		if (wrapper.type == DXF_ENTITY_POLYLINE)
 		{
 			if (wrapper.data.polyline._vertexHandle != 0)
@@ -443,10 +441,9 @@ dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocu
 		}
 	}
 
-	// 清空 vector（现在才安全）
 	pDoc->g_entityList.clear();
 
-	// 可选：强制释放 vector 预留的内存
+	//强制释放 vector 预留的内存
 	pDoc->g_entityList.shrink_to_fit();
 
 	return 0;
@@ -956,7 +953,7 @@ dxflib_EXPORTS_API int __stdcall WriteSingleSplineKnotBlock(
 	return -1;
 }
 
-dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxfDocument)
+dxflib_EXPORTS_API int __stdcall DeleteAllWriteBufferEntity(DxfDocument_Handle hdxfDocument)
 {
 	if (!hdxfDocument)return -1;
 
@@ -968,7 +965,7 @@ dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxf
 	// 遍历所有元素，释放 polyline 里的句柄内存
 	for (auto& wrapper : pDoc->g_writeEntityList)
 	{
-		// 只有多段线 Polyline 有动态句柄，需要释放
+		// 只有多段线 Polyline与样条线 有动态句柄，需要释放
 		if (wrapper.type == DXF_ENTITY_POLYLINE)
 		{
 			if (wrapper.data.polyline._vertexHandle != 0)
@@ -977,17 +974,34 @@ dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxf
 				wrapper.data.polyline._vertexHandle = 0;
 			}
 		}
+		else if (wrapper.type == DXF_ENTITY_SPLINE)
+		{
+			if (wrapper.data.spline._controlPointsHandle != 0)
+			{
+				dxflibCreationClass::DestroySplineControlPointList(wrapper.data.spline._controlPointsHandle);
+				wrapper.data.spline._controlPointsHandle = 0;
+			}
+			if (wrapper.data.spline._fitPointHandle != 0)
+			{
+				dxflibCreationClass::DestroySplineFitPointList(wrapper.data.spline._fitPointHandle);
+				wrapper.data.spline._fitPointHandle = 0;
+			}
+			if (wrapper.data.spline._knotsHandle != 0)
+			{
+				dxflibCreationClass::DestroySplineKnotList(wrapper.data.spline._knotsHandle);
+				wrapper.data.spline._knotsHandle = 0;
+			}
+		}
 	}
 
-	// 清空 vector（现在才安全）
-	pDoc->g_entityList.clear();
+	pDoc->g_writeEntityList.clear();
 
-	// 可选：强制释放 vector 预留的内存
-	pDoc->g_entityList.shrink_to_fit();
+	// 强制释放 vector 预留的内存
+	pDoc->g_writeEntityList.shrink_to_fit();
 	return 0;
 }
 
-dxflib_EXPORTS_API int __stdcall DeleteWriteVectorBlock(DxfDocument_Handle hdxfDocument)
+dxflib_EXPORTS_API int __stdcall DeleteAllWriteBufferBlock(DxfDocument_Handle hdxfDocument)
 {
 	if (!hdxfDocument)return -1;
 
@@ -999,11 +1013,33 @@ dxflib_EXPORTS_API int __stdcall DeleteWriteVectorBlock(DxfDocument_Handle hdxfD
 	{//块下实体下的多端线句柄释放
 		for (auto& entity : block.g_blockEntityList)
 		{
-			if (entity.data.polyline._vertexHandle != 0)
+			if (entity.type == DXF_ENTITY_POLYLINE)
 			{
-				dxflibCreationClass::DestroyPolylineList(entity.data.polyline._vertexHandle);
-				entity.data.polyline._vertexHandle = 0;
+				if (entity.data.polyline._vertexHandle != 0)
+				{
+					dxflibCreationClass::DestroyPolylineList(entity.data.polyline._vertexHandle);
+					entity.data.polyline._vertexHandle = 0;
+				}
 			}
+			else if (entity.type == DXF_ENTITY_SPLINE)
+			{
+				if (entity.data.spline._controlPointsHandle != 0)
+				{
+					dxflibCreationClass::DestroySplineControlPointList(entity.data.spline._controlPointsHandle);
+					entity.data.spline._controlPointsHandle = 0;
+				}
+				if (entity.data.spline._fitPointHandle != 0)
+				{
+					dxflibCreationClass::DestroySplineFitPointList(entity.data.spline._fitPointHandle);
+					entity.data.spline._fitPointHandle = 0;
+				}
+				if (entity.data.spline._knotsHandle != 0)
+				{
+					dxflibCreationClass::DestroySplineKnotList(entity.data.spline._knotsHandle);
+					entity.data.spline._knotsHandle = 0;
+				}
+			}
+
 		}
 	}
 	pDoc->g_writeBlockList.clear();
@@ -1550,7 +1586,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 		case DxfEntityType::DXF_ENTITY_SPLINE:
 		{//样条线
 			DxfSplineEntity tempEntity = pDoc->g_writeEntityList[i].data.spline;
-			std::cout << "写入样条线标志：" << tempEntity.flags << std::endl;
+			//std::cout << "写入样条线标志：" << tempEntity.flags << std::endl;
 			dxf->writeSpline(
 				*dw,
 				DL_SplineData(
@@ -1584,7 +1620,7 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 				{
 					for (const auto& SCPL : *pSCPL)
 					{
-						std::cout << "写入样条线控制点权重：" << SCPL.weight << std::endl;
+						//std::cout << "写入样条线控制点权重：" << SCPL.weight << std::endl;
 						dxf->writeControlPoint(
 							*dw,
 							DL_ControlPointData(
@@ -1635,6 +1671,8 @@ dxflib_EXPORTS_API int __stdcall WriteDXF(DxfDocument_Handle hdxfDocument, const
 	delete dw;
 	delete dxf;
 
+	DeleteAllWriteBufferEntity(hdxfDocument);
+	DeleteAllWriteBufferBlock(hdxfDocument);
 	return 0;
 }
 #pragma endregion

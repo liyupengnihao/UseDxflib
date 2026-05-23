@@ -2,33 +2,20 @@
 #include "pch.h"
 
 #ifdef _DEBUG
+#include <stdlib.h>
+#include <crtdbg.h>
+#endif // _DEBUG
+
+#ifdef _DEBUG
 #include <random>
 #include <chrono>
 #include "dxflibAPIExport.h"//含对外结构体
-int main() {
-	//printf("正在本地测试 DLL 中的函数...\n");
-	//std::cout << "正在本地测试 DLL 中的函数...\n" << std::endl;
 
-	DxfDocument_Handle hdxfDocument = CreateDxfDocument();
-
-	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\demo.dxf");
-	//ReadDXF("E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/myfile.dxf");
-	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\newfile.dxf");
-	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\newfile.txt");
-	//ReadDXF("E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileTwo.dxf");
-	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileFour.dxf");
-
-	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/demo.dxf");
-	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
-	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newsix.dxf");
-	//ReadDXF(hdxfDocument, "C:/Users/Public/Nwt/cache/recv/程佳佳/8985FDB-FD-007-00.DXF");
-	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newseven.dxf");
-	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/neweight.dxf");
-	ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newnine.dxf");
-
-
+int TestWrite(DxfDocument_Handle hdxfDocument)
+{
 #pragma region 重写dxf
-	DeleteAllReadEntity(hdxfDocument);
+	DeleteAllWriteBufferEntity(hdxfDocument);
+	DeleteAllWriteBufferBlock(hdxfDocument);
 
 	//
 	DxfEntityWrapper poly;
@@ -261,11 +248,11 @@ int main() {
 		SplineFitPoint SFP = { 50,-50,0 };
 
 		WriteSingleSplineFitPointEntity(hdxfDocument, inIndex, &SFP);
-		SFP = { 70, 0,0};
+		SFP = { 70, 0,0 };
 		WriteSingleSplineFitPointEntity(hdxfDocument, inIndex, &SFP);
-		SFP = { 80,-60,0};
+		SFP = { 80,-60,0 };
 		WriteSingleSplineFitPointEntity(hdxfDocument, inIndex, &SFP);
-		SFP = { 100,-30,0};
+		SFP = { 100,-30,0 };
 		WriteSingleSplineFitPointEntity(hdxfDocument, inIndex, &SFP);
 	}
 #pragma endregion
@@ -385,8 +372,57 @@ int main() {
 	//WriteDXF(hdxfDocument, "newFive.dxf");
 	WriteDXF(hdxfDocument, "newten.dxf");
 
+	//销毁静态内存
+
+
 #pragma endregion
 
+	return 0;
+}
+
+int main() {
+	//printf("正在本地测试 DLL 中的函数...\n");
+	//std::cout << "正在本地测试 DLL 中的函数...\n" << std::endl;
+	//_CrtSetBreakAlloc(277); // 让程序在第 277 次分配内存时中断
+	//_CrtSetBreakAlloc(261); // 让程序在第 261 次分配内存时中断
+	//_CrtSetBreakAlloc(259); // 让程序在第 259 次分配内存时中断
+	//_CrtSetBreakAlloc(258); // 让程序在第 258 次分配内存时中断
+	//_CrtSetBreakAlloc(257); // 让程序在第 257 次分配内存时中断
+	//_CrtSetBreakAlloc(249); // 让程序在第 249 次分配内存时中断
+
+	//_CrtSetBreakAlloc(179);
+
+		// 1. 启用自动泄漏检测（程序退出时自动dump）
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+	// 2. 确保报告输出到 VS 输出窗口
+	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
+	DxfDocument_Handle hdxfDocument = CreateDxfDocument();
+
+	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\demo.dxf");
+	//ReadDXF("E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/myfile.dxf");
+	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\newfile.dxf");
+	//ReadDXF("E:\\VSCODE\\CADAnalysisDLL\\CADAnalysisDLL\\newfile.txt");
+	//ReadDXF("E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileTwo.dxf");
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newfileFour.dxf");
+
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/demo.dxf");
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newFive.dxf");
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newsix.dxf");
+	//ReadDXF(hdxfDocument, "C:/Users/Public/Nwt/cache/recv/程佳佳/8985FDB-FD-007-00.DXF");
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newseven.dxf");
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/neweight.dxf");
+	//ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newnine.dxf");
+	int l = 0;
+	do {
+		ReadDXF(hdxfDocument, "E:/VSCODE/CADAnalysisDLL/CADAnalysisDLL/newten.dxf");
+	} while (++l < -10);
+
+	do {
+		TestWrite(hdxfDocument);
+	} while (++l < -10);
+
+	DestroyDxfDocument(hdxfDocument);
 	return 0;
 }
 #else

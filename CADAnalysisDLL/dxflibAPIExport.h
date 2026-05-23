@@ -451,20 +451,20 @@ extern "C"
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////销毁内容
 	/// <summary>
-	/// 删除要写入dxf的实体动态数组内容
+	/// 销毁句柄下写入到缓存中的全部实体
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <returns></returns>
-	dxflib_EXPORTS_API int __stdcall DeleteWriteVectorEntity(DxfDocument_Handle hdxfDocument);
+	dxflib_EXPORTS_API int __stdcall DeleteAllWriteBufferEntity(DxfDocument_Handle hdxfDocument);
 	/// <summary>
-	/// 删除要写入dxf的块动态数组内容
+	/// 销毁句柄下写入到缓存中的全部块
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <returns></returns>
-	dxflib_EXPORTS_API int __stdcall DeleteWriteVectorBlock(DxfDocument_Handle hdxfDocument);
+	dxflib_EXPORTS_API int __stdcall DeleteAllWriteBufferBlock(DxfDocument_Handle hdxfDocument);
 	////////////////////////////////////////////////////////////////////////////////////Dxf文件写入
 	/// <summary>
-	/// 将实体数组写入dxf中，无文件创建有文件修改
+	/// 将实体数组写入dxf中，无文件创建有文件修改,每次正常写入后会清空写入缓存中的内容
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <param name="path"></param>
