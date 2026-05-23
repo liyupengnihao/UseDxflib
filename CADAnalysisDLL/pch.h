@@ -25,5 +25,10 @@
 #include <stack>//栈
 #include <cmath>//此中拿到πstd::acos(-1.0)
 
+#include <mutex>
+//#include <shared_mutex>//读多些少
+
+#include <functional>
+
 #include <boost/variant.hpp>
 #endif //PCH_H

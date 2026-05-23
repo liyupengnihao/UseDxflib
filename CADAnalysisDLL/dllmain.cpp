@@ -369,9 +369,6 @@ int TestWrite(DxfDocument_Handle hdxfDocument)
 	//WriteDXF(hdxfDocument, "newFive.dxf");
 	WriteDXF(hdxfDocument, "newten.dxf");
 
-	//销毁静态内存
-
-
 #pragma endregion
 
 	return 0;

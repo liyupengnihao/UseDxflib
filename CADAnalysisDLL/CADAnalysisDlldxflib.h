@@ -13,6 +13,8 @@ typedef vector<SplineFitPoint>SplineFitPointList;
 //样条曲线单个节点向量，值为控制点数量+次数+1（读与写都是如此计算），一个对象代表一个样条线的全部节点向量
 typedef vector<SplineKnot>SplineKnotList;
 
+typedef vector<DxfEntityWrapper> ReadEntityWrapperList;
+
 class dxflibCreationClass :public DL_CreationAdapter//DL_CreationAdapter类中有空实现另一个是纯虚要全实现
 {//public 代表重写的函数和DL_CreationAdapter一样。public的前面给private诺对象指针给基类指针也可调用，编译时是基类的，运行时是子类的
 public:
@@ -58,6 +60,41 @@ public:
 	void addRay(const DL_RayData& data)override;//单向无限延长的线
 #pragma endregion
 #pragma endregion
+
+
+
+private:
+	//读取dxf时才使用栈，读取这一动作是单线程加锁的，栈不用改
+	std::stack<DxfPolylineEntity*> m_polylineStack;//栈容器指针,多段线存储(一个dxf的全部多段线都用此暂存),读取或写入实体或块都用此缓冲，后续分开
+	bool m_isCurrentEntityPolyline = false;//当前实体是否是多段线
+
+	bool m_isCurrentBoloc = false;//当前是自定义块
+
+	std::stack<DxfSplineEntity*> m_splineStack;//样条线存储
+	bool m_isCurrentSpline = false;//当前实体是否为样条线
+
+
+	//自定义的句柄
+
+
+	mutable std::mutex m_mutexPolyline;
+
+	mutable std::mutex m_mutexSpline;
+	//键不同对象内没有相同的
+	static inline std::atomic<int> s_nextHandle{ 1 };//inline可让静态成员在头文件中定义与初始化,std::atomic确定变量的读取、修改、写回是不可分割的原子操作
+	//多段线顶点
+	std::unordered_map<int, PolylinePointList> s_PolylineBuffers;
+	//样条线控制点
+	std::unordered_map<int, SplineControlPointList> s_SplineControlPointBuffers;
+	//样条线拟合点
+	std::unordered_map<int, SplineFitPointList> s_SplineFitPointBuffers;
+	//样条线向量节点
+	std::unordered_map<int, SplineKnotList> s_SplineKnotBuffers;
+	//使用 std::atomic 保证自增操作的原子性，多线程安全
+
+
+public:
+
 	void printAttributes();
 
 	//Color ConvertColor(int colorIndex);
@@ -71,62 +108,106 @@ public:
 	void RemoveAndDeletePolylineStack();
 
 
-
 	//自定义句柄使用
+#pragma region //多段线与样条线数组缓存数据操作
 	//多段线使用
 	//创建句柄映射，拷贝传入的结构体并放入哈希表中
-	static int CreatePolylineList(const PolylinePointList& pts);
-	//通过句柄得到动态数组指针
-	static PolylinePointList* GetPolylineList(int handle);
+	int CreatePolylineList(const PolylinePointList& pts);
+	//通过句柄得到动态数组指针,多线程给外部指针不安全，使用ExecuteOnPolyline
+	PolylinePointList* GetPolylineList(int handle);
+
+	// 带回调的安全执行接口
+	// 线程安全地在指定句柄的数据上执行自定义操作
+   // Func 是一个接收 PolylinePointList& 的函数对象（Lambda、函数指针等）
+	template<typename Func> bool ExecuteOnPolyline(int handle, Func func)//模版函数给外部看，头文件中实现,Func泛形函数
+	{
+		std::lock_guard<std::mutex> lock(m_mutexPolyline);
+
+		// 查找句柄对应的容器
+		auto it = s_PolylineBuffers.find(handle);
+		if (it == s_PolylineBuffers.end()) return false;
+
+		// 在锁的保护下，执行外部传入的修改逻辑
+		func(it->second);//函数接受一个PolylinePointList&参数
+		return true;
+	}
 	//销毁多段线句柄
-	static void DestroyPolylineList(int handle);
+	void DestroyPolylineList(int handle);
 
+
+
+	//待模版函数多线程安全
 	//样条线使用
-	static int CreateSplineControlPointList(const SplineControlPointList& pts);
-	static SplineControlPointList* GetSplineControlPointList(int handle);
-	static void DestroySplineControlPointList(int handle);
+	int CreateSplineControlPointList(const SplineControlPointList& pts);
+	SplineControlPointList* GetSplineControlPointList(int handle);
+	template<typename Func> bool ExecuteOnSplineControlPoint(int handle, Func func)
+	{
+		std::lock_guard<std::mutex> lock(m_mutexSpline);
 
-	static int CreateSplineFitPointList(const SplineFitPointList& pts);
-	static SplineFitPointList* GetSplineFitPointList(int handle);
-	static void DestroySplineFitPointList(int handle);
+		auto it = s_SplineControlPointBuffers.find(handle);
+		if (it == s_SplineControlPointBuffers.end()) return false;
 
-	static int CreateSplineKnotList(const SplineKnotList& pts);
-	static SplineKnotList* GetSplineKnotList(int handle);
-	static void DestroySplineKnotList(int handle);
-	//std::vector<DxfEntity> g_entityList;
-	std::vector<DxfEntityWrapper> g_entityList;//几何实体
-	std::vector< DxfEntityWrapper> g_writeEntityList;//写入几何实体
-	std::string g_currentLayer = "0";//默认图层
-
-private:
-	std::stack<DxfPolylineEntity*> m_polylineStack;//栈容器指针,多段线存储(一个dxf的全部多段线都用此暂存),读取或写入实体或块都用此缓冲，后续分开
-	bool m_isCurrentEntityPolyline = false;//当前实体是否是多段线
-
-	bool m_isCurrentBoloc = false;//当前是自定义块
-
-	std::stack<DxfSplineEntity*> m_splineStack;//样条线存储
-	bool m_isCurrentSpline = false;//当前实体是否为样条线
+		func(it->second);
+		return true;
+	}
+	void DestroySplineControlPointList(int handle);
 
 
-	//自定义的句柄
-	//多段线顶点
-	static inline std::unordered_map<int, PolylinePointList> s_PolylineBuffers;
-	//样条线控制点
-	static inline std::unordered_map<int, SplineControlPointList> s_SplineControlPointBuffers;
-	//样条线拟合点
-	static inline std::unordered_map<int, SplineFitPointList> s_SplineFitPointBuffers;
-	//样条线向量节点
-	static inline std::unordered_map<int, SplineKnotList> s_SplineKnotBuffers;
-	//使用 std::atomic 保证自增操作的原子性，多线程安全
-	static inline std::atomic<int> s_nextHandle{ 1 };//inline可让静态成员在头文件中定义与初始化,std::atomic确定变量的读取、修改、写回是不可分割的原子操作
+
+	int CreateSplineFitPointList(const SplineFitPointList& pts);
+	SplineFitPointList* GetSplineFitPointList(int handle);
+	template<typename Func> bool ExecuteOnSplineFitPoint(int handle, Func func)
+	{
+		std::lock_guard<std::mutex> lock(m_mutexSpline);
+
+		auto it = s_SplineFitPointBuffers.find(handle);
+		if (it == s_SplineFitPointBuffers.end()) return false;
+
+		func(it->second);
+		return true;
+	}
+	void DestroySplineFitPointList(int handle);
+
+
+
+	int CreateSplineKnotList(const SplineKnotList& pts);
+	SplineKnotList* GetSplineKnotList(int handle);
+	template<typename Func> bool ExecuteOnSplineKnot(int handle, Func func)
+	{
+		std::lock_guard<std::mutex> lock(m_mutexSpline);
+
+		auto it = s_SplineKnotBuffers.find(handle);
+		if (it == s_SplineKnotBuffers.end()) return false;
+
+		func(it->second);
+		return true;
+	}
+	void DestroySplineKnotList(int handle);
+#pragma endregion
+
+
+	//m_readEntityList/m_writeEntityList/m_readBlockList/m_readBlockList单对象多线程读写有问题，一个线程还没读完另一个线程开始读会交替写入m_readEntityList、m_writeBlockList。写入两线程同时写入会交替写入到缓冲区m_writeEntityList，m_writeBlockList
 	
 public:
+	//缓存的哈希后续实现
+	ReadEntityWrapperList m_readEntityList;//读取的几何实体缓存，只能缓存一个数据
+	std::unordered_map<int, ReadEntityWrapperList> g_readEntityListMap;//一个值代表读取的一个dxf文件的全部实体缓存
+
+	ReadEntityWrapperList m_writeEntityList;//写入的几何实体缓存
+	std::unordered_map<int, ReadEntityWrapperList> g_writeEntityListMap;//一个值代表写入的一个dxf文件的全部实体缓存
+
+	std::string g_currentLayer = "0";//默认图层
+
+
 	struct Block
 	{
 		std::string blockName;		// 块名称
 		DxfPoint alignPoint;		//对齐点
-		std::vector<DxfEntityWrapper> g_blockEntityList;//块内实体
+		ReadEntityWrapperList m_blockEntityList;//块内实体缓存
 	};
-	std::vector<Block> g_blockList;//每次读取前要清空
-	std::vector<Block> g_writeBlockList;//写入块用此
+	vector<Block> m_readBlockList;//读取的块缓存
+	std::unordered_map<int, vector<Block>> g_readBlockList;//一个值代表读取的一个dxf文件的全部块缓存
+
+	vector<Block> m_writeBlockList;//写入的块缓存
+	std::unordered_map<int, vector<Block>> g_writeBlockList;//一个值代表写入的一个dxf文件的全部块缓存
 };

@@ -244,7 +244,7 @@ extern "C"
 	dxflib_EXPORTS_API int __stdcall DestroyDxfDocument(DxfDocument_Handle hdxfDocument);
 
 	/// <summary>
-	/// 读取DXF，读取前会先销毁之前的缓存实体与块
+	/// 读取DXF，读取前会先销毁之前的缓存实体与块，此函数只会单线程执行
 	/// </summary>
 	/// <param name="filePath"></param>
 	/// <returns></returns>
@@ -464,7 +464,7 @@ extern "C"
 	dxflib_EXPORTS_API int __stdcall DeleteAllWriteBufferBlock(DxfDocument_Handle hdxfDocument);
 	////////////////////////////////////////////////////////////////////////////////////Dxf文件写入
 	/// <summary>
-	/// 将实体数组写入dxf中，无文件创建有文件修改,每次正常写入后会清空写入缓存中的内容
+	/// 将实体数组写入dxf中，无文件创建有文件修改,每次正常写入后会清空写入缓存中的内容，此函数只会单线程执行
 	/// </summary>
 	/// <param name="hdxfDocument"></param>
 	/// <param name="path"></param>

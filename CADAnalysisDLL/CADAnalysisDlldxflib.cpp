@@ -63,7 +63,7 @@ void dxflibCreationClass::addPoint(const DL_PointData& data) {
 	//pointDxfData.pointCoord = { data.x,data.y,data.z };
 
 	//entity.entityData = pointDxfData;
-	//g_entityList.push_back(entity);//动态数组推送
+	//m_readEntityList.push_back(entity);//动态数组推送
 
 	DxfPointEntity pointDxfData;
 	pointDxfData.pointCoord = { data.x,data.y,data.z };
@@ -71,16 +71,16 @@ void dxflibCreationClass::addPoint(const DL_PointData& data) {
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{//实体段内
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 
 	printAttributes();
@@ -106,16 +106,16 @@ void dxflibCreationClass::addLine(const DL_LineData& data) {
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 
 	printAttributes();
@@ -145,16 +145,16 @@ void dxflibCreationClass::addText(const DL_TextData& data)
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 
 	printAttributes();
@@ -185,16 +185,16 @@ void dxflibCreationClass::addMText(const DL_MTextData& data)
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 
 	printAttributes();
@@ -222,16 +222,16 @@ void dxflibCreationClass::addArc(const DL_ArcData& data) {
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 
 
@@ -259,16 +259,16 @@ void dxflibCreationClass::addCircle(const DL_CircleData& data) {
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 
 
@@ -298,7 +298,7 @@ void dxflibCreationClass::addPolyline(const DL_PolylineData& data) {//注意后�
 
 	m_polylineStack.push(pPoly);//指针是副本，指向的内存一样
 
-	//g_entityList.push_back(entity);
+	//m_readEntityList.push_back(entity);
 
 	printAttributes();
 
@@ -312,14 +312,17 @@ void dxflibCreationClass::addVertex(const DL_VertexData& data)//注意后续内�
 
 	DxfPolylineEntity* pPoly = m_polylineStack.top();//当前正在构建的多段线，top访问栈顶元素但不移除
 
-	//句柄转回std::vector指针
-	PolylinePointList* pPoints = GetPolylineList(pPoly->_vertexHandle);
-	if (!pPoints)
-		return;
+	//传入两部分数据：1.多段线的顶点列表（通过句柄访问），2.一个Lambda函数，定义了如何修改这个列表（在这里是添加一个新顶点）
+	bool ret = ExecuteOnPolyline(pPoly->_vertexHandle, [&data](PolylinePointList& points) {//闭包，引用捕获，闭包被执行时data仍然有效
+		points.push_back({ data.x, data.y, data.z });
+	});
 
-	pPoints->push_back({ data.x,data.y,data.z });
+	////句柄转回std::vector指针
+	//PolylinePointList* pPoints = GetPolylineList(pPoly->_vertexHandle);
+	//if (!pPoints)
+	//	return;
 
-	//pPoly->vertices.push_back({ data.x, data.y, data.z });
+	//pPoints->push_back({ data.x,data.y,data.z });
 }
 #pragma endregion
 
@@ -349,16 +352,16 @@ void dxflibCreationClass::addInsert(const DL_InsertData& data)
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 
 }
@@ -372,7 +375,7 @@ void dxflibCreationClass::addBlock(const DL_BlockData& data)
 	Block blockData;
 	blockData.blockName = data.name;
 	blockData.alignPoint = { data.bpx,data.bpy,data.bpz };
-	g_blockList.push_back(blockData);
+	m_readBlockList.push_back(blockData);
 
 	if (data.name != "*Model_Space" && data.name != "*Paper_Space" && data.name != "*Paper_Space0")//测试用容器
 		m_isCurrentBoloc = true;
@@ -406,16 +409,16 @@ void dxflibCreationClass::addEllipse(const DL_EllipseData& data)
 
 	if (m_isCurrentBoloc)
 	{//块内
-		if (!g_blockList.empty())
+		if (!m_readBlockList.empty())
 		{
-			Block& lastBlock = g_blockList.back();//返回的是元素的引用
+			Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-			lastBlock.g_blockEntityList.push_back(entity);
+			lastBlock.m_blockEntityList.push_back(entity);
 		}
 	}
 	else
 	{
-		g_entityList.push_back(entity);
+		m_readEntityList.push_back(entity);
 	}
 }
 
@@ -454,14 +457,16 @@ void dxflibCreationClass::addControlPoint(const DL_ControlPointData& data)
 
 	DxfSplineEntity* pSpline = m_splineStack.top();//当前正在构建的多段线，top访问栈顶元素但不移除
 
-	//句柄转回std::vector指针
-	SplineControlPointList* pSplineControlPointList = GetSplineControlPointList(pSpline->_controlPointsHandle);
-	if (!pSplineControlPointList)
-		return;
+	ExecuteOnSplineControlPoint(pSpline->_controlPointsHandle, [&](SplineControlPointList& points) {
+		points.push_back({ { data.x, data.y, data.z }, data.w });
+		});
 
-	pSplineControlPointList->push_back({ { data.x,data.y,data.z } ,data.w});
+	////句柄转回std::vector指针
+	//SplineControlPointList* pSplineControlPointList = GetSplineControlPointList(pSpline->_controlPointsHandle);
+	//if (!pSplineControlPointList)
+	//	return;
 
-	//pPoly->vertices.push_back({ data.x, data.y, data.z });
+	//pSplineControlPointList->push_back({ { data.x,data.y,data.z } ,data.w});
 }
 
 void dxflibCreationClass::addFitPoint(const DL_FitPointData& data)
@@ -557,19 +562,24 @@ void dxflibCreationClass::endEntity()
 {
 	if (m_isCurrentEntityPolyline)
 	{
-		//多段线在此推送到g_entityList
+		//多段线在此推送到m_readEntityList
 
 		// 取出完成的多段线
 		DxfPolylineEntity* pPoly = m_polylineStack.top();
-		m_polylineStack.pop();
+		m_polylineStack.pop();//从栈中移除但不销毁
 
 		pPoly->vertexCount = 0;
 
-		PolylinePointList* pPoints = GetPolylineList(pPoly->_vertexHandle);
-		if (pPoints)
-		{
-			pPoly->vertexCount = static_cast<int>(pPoints->size());
-		}
+		bool ret = ExecuteOnPolyline(pPoly->_vertexHandle, [pPoly](PolylinePointList& points) {//显式捕获，隐式[&]
+			//只有在 handle 找到且执行成功时，才会进入这里
+			pPoly->vertexCount = static_cast<int>(points.size());
+		});
+
+		//PolylinePointList* pPoints = GetPolylineList(pPoly->_vertexHandle);
+		//if (pPoints)
+		//{
+		//	pPoly->vertexCount = static_cast<int>(pPoints->size());
+		//}
 
 		// 包装并加入列表
 		DxfEntityWrapper entity;
@@ -580,16 +590,16 @@ void dxflibCreationClass::endEntity()
 
 		if (m_isCurrentBoloc)
 		{//块内
-			if (!g_blockList.empty())
+			if (!m_readBlockList.empty())
 			{
-				Block& lastBlock = g_blockList.back();//返回的是元素的引用
+				Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-				lastBlock.g_blockEntityList.push_back(entity);
+				lastBlock.m_blockEntityList.push_back(entity);
 			}
 		}
 		else
 		{
-			g_entityList.push_back(entity);
+			m_readEntityList.push_back(entity);
 		}
 
 		m_isCurrentEntityPolyline = false;
@@ -607,16 +617,16 @@ void dxflibCreationClass::endEntity()
 
 		if (m_isCurrentBoloc)
 		{
-			if (!g_blockList.empty())
+			if (!m_readBlockList.empty())
 			{
-				Block& lastBlock = g_blockList.back();//返回的是元素的引用
+				Block& lastBlock = m_readBlockList.back();//返回的是元素的引用
 
-				lastBlock.g_blockEntityList.push_back(entity);
+				lastBlock.m_blockEntityList.push_back(entity);
 			}
 		}
 		else
 		{
-			g_entityList.push_back(entity);
+			m_readEntityList.push_back(entity);
 		}
 		m_isCurrentSpline = false;
 	}
@@ -647,6 +657,7 @@ void dxflibCreationClass::RemoveAndDeletePolylineStack()
 
 int dxflibCreationClass::CreatePolylineList(const PolylinePointList& pts)
 {
+	std::lock_guard<std::mutex> lock(m_mutexPolyline);//锁的是整个作用域(此为函数内)
 	int handle = s_nextHandle++;
 
 	s_PolylineBuffers.emplace(handle, pts);//拷贝pts
@@ -656,6 +667,8 @@ int dxflibCreationClass::CreatePolylineList(const PolylinePointList& pts)
 
 PolylinePointList* dxflibCreationClass::GetPolylineList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexPolyline);
+
 	auto it = s_PolylineBuffers.find(handle);
 	if (it == s_PolylineBuffers.end())
 		return nullptr;
@@ -664,11 +677,13 @@ PolylinePointList* dxflibCreationClass::GetPolylineList(int handle)
 
 void dxflibCreationClass::DestroyPolylineList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexPolyline);
 	s_PolylineBuffers.erase(handle);//PolylinePointList是对象，会调用对应的析构函数
 }
 
 int dxflibCreationClass::CreateSplineControlPointList(const SplineControlPointList& pts)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	int handle = s_nextHandle++;//先运输后赋值
 	s_SplineControlPointBuffers.emplace(handle, pts);
 	return handle;
@@ -676,6 +691,7 @@ int dxflibCreationClass::CreateSplineControlPointList(const SplineControlPointLi
 
 SplineControlPointList* dxflibCreationClass::GetSplineControlPointList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	auto it = s_SplineControlPointBuffers.find(handle);
 	if (it == s_SplineControlPointBuffers.end())
 		return nullptr;
@@ -684,11 +700,13 @@ SplineControlPointList* dxflibCreationClass::GetSplineControlPointList(int handl
 
 void dxflibCreationClass::DestroySplineControlPointList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	s_SplineControlPointBuffers.erase(handle);
 }
 
 int dxflibCreationClass::CreateSplineFitPointList(const SplineFitPointList& pts)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	int handle = s_nextHandle++;//先运输后赋值
 	s_SplineFitPointBuffers.emplace(handle, pts);
 	return handle;
@@ -696,6 +714,7 @@ int dxflibCreationClass::CreateSplineFitPointList(const SplineFitPointList& pts)
 
 SplineFitPointList* dxflibCreationClass::GetSplineFitPointList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	auto it = s_SplineFitPointBuffers.find(handle);
 	if (it == s_SplineFitPointBuffers.end())
 		return nullptr;
@@ -704,11 +723,13 @@ SplineFitPointList* dxflibCreationClass::GetSplineFitPointList(int handle)
 
 void dxflibCreationClass::DestroySplineFitPointList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	s_SplineFitPointBuffers.erase(handle);
 }
 
 int dxflibCreationClass::CreateSplineKnotList(const SplineKnotList& pts)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	int handle = s_nextHandle++;//先运输后赋值
 	s_SplineKnotBuffers.emplace(handle, pts);
 	return handle;
@@ -716,6 +737,7 @@ int dxflibCreationClass::CreateSplineKnotList(const SplineKnotList& pts)
 
 SplineKnotList* dxflibCreationClass::GetSplineKnotList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	auto it = s_SplineKnotBuffers.find(handle);
 	if (it == s_SplineKnotBuffers.end())
 		return nullptr;
@@ -724,5 +746,6 @@ SplineKnotList* dxflibCreationClass::GetSplineKnotList(int handle)
 
 void dxflibCreationClass::DestroySplineKnotList(int handle)
 {
+	std::lock_guard<std::mutex> lock(m_mutexSpline);
 	s_SplineKnotBuffers.erase(handle);
 }
