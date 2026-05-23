@@ -396,8 +396,23 @@ dxflib_EXPORTS_API int __stdcall GetSplineFitPointAt(DxfDocument_Handle hdxfDocu
 dxflib_EXPORTS_API int __stdcall GetSplineKnotCount(DxfDocument_Handle hdxfDocument, const DxfSplineEntity* splineEntity)
 {
 	if (!hdxfDocument || !splineEntity)return -1;
-	const SplineKnotList* pSFP = dxflibCreationClass::GetSplineKnotList(splineEntity->_knotsHandle);
-	return static_cast<int>(pSFP->size());
+	const SplineKnotList* pSK = dxflibCreationClass::GetSplineKnotList(splineEntity->_knotsHandle);
+	return static_cast<int>(pSK->size());
+}
+
+dxflib_EXPORTS_API int __stdcall GetSplineKnotPointAt(DxfDocument_Handle hdxfDocument, const int index, const DxfSplineEntity* splineEntity, SplineKnot* outKnot)
+{
+	if (!hdxfDocument || !splineEntity || !outKnot)return -1;
+	const SplineKnotList* pSK = dxflibCreationClass::GetSplineKnotList(splineEntity->_knotsHandle);
+	try
+	{
+		*outKnot = pSK->at(index);
+	}
+	catch (const std::out_of_range& e)
+	{
+		return -1;
+	}
+	return 0;
 }
 
 dxflib_EXPORTS_API int __stdcall DeleteAllReadEntity(DxfDocument_Handle hdxfDocument)

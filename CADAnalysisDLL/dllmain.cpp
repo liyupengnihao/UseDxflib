@@ -2,11 +2,8 @@
 #include "pch.h"
 
 #ifdef _DEBUG
-#include <stdlib.h>
-#include <crtdbg.h>
-#endif // _DEBUG
-
-#ifdef _DEBUG
+#include <stdlib.h>//debug模式调试显示内存泄露情况
+#include <crtdbg.h>//debug模式调试显示内存泄露情况
 #include <random>
 #include <chrono>
 #include "dxflibAPIExport.h"//含对外结构体

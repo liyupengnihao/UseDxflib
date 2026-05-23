@@ -296,7 +296,7 @@ void dxflibCreationClass::addPolyline(const DL_PolylineData& data) {//注意后�
 
 	pPoly->_vertexHandle = CreatePolylineList(pPoints);
 
-	m_polylineStack.push(pPoly);
+	m_polylineStack.push(pPoly);//指针是副本，指向的内存一样
 
 	//g_entityList.push_back(entity);
 

@@ -4,13 +4,13 @@
 #include "dxflibAPIExport.h"
 using std::string;
 using std::vector;
-//存多段线顶点的结构体
+//存多段线顶点的结构体，一个对象代表一个多段线的全部顶点
 typedef vector<DxfPoint> PolylinePointList;
-//样条曲线单个控制点数组
+//样条曲线单个控制点数组，一个对象代表一个样条线的全部控制点
 typedef vector<SplineControlPoint> SplineControlPointList;
-//样条曲线单个拟合点数组
+//样条曲线单个拟合点数组，一个对象代表一个样条线的全部拟合点
 typedef vector<SplineFitPoint>SplineFitPointList;
-//样条曲线单个节点向量，值为控制点数量+阶数+1（读与写都是如此计算）
+//样条曲线单个节点向量，值为控制点数量+次数+1（读与写都是如此计算），一个对象代表一个样条线的全部节点向量
 typedef vector<SplineKnot>SplineKnotList;
 
 class dxflibCreationClass :public DL_CreationAdapter//DL_CreationAdapter类中有空实现另一个是纯虚要全实现
